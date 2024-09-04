@@ -6,3 +6,9 @@ def accuracy(preds, labels):
             match_count += 1
 
     return 100 * (match_count / len(preds))
+
+def match(prediction, ground_truth):
+    for gt in ground_truth:
+        if gt in prediction:
+            return 1
+    return 0

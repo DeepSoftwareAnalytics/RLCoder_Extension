@@ -421,6 +421,7 @@ if __name__ == "__main__":
     # parser.add_argument("--batch_size", default=16, type=int, help="Batch size")
     parser.add_argument("--batch_size", default=8, type=int, help="Batch size")
     # parser.add_argument("--sample_number", default=10, type=int, help="Number of samples")
+    # parser.add_argument("--sample_number", default=10, type=int, help="Number of samples")
     parser.add_argument("--sample_number", default=5, type=int, help="Number of samples")
     parser.add_argument("--data_per_epoch", default=2000, type=int, help="Amount of data per epoch")
     parser.add_argument("--lr", default=5e-5, type=float, help="Learning rate")
