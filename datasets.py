@@ -33,8 +33,8 @@ class Example(object):
         return (
             f"[Example]:\n"
             f"[Task ID]:\n{self.task_id}\n"
-            f"[Path]:\n{self.question}\n"
-            f"[Left Context]:\n{self.answer}\n"
+            f"[Question]:\n{self.question}\n"
+            f"[Answer]:\n{self.answer}\n"
         )
 
 def load_test_dataset(args, datasetname):
@@ -44,7 +44,33 @@ def load_test_dataset(args, datasetname):
     :param datasetname: The name of the dataset to load.
     :return: The loaded dataset.
     """
-    return   
+    if datasetname == 'popqa':
+        data_frame = pd.read_json("~/wsq/eval_data/popqa_longtail_w_gs.jsonl")
+    if datasetname == 'arc':
+        data_frame = pd.read_json("~/wsq/eval_data/arc_challenge_processed.jsonl")
+    if datasetname == 'pubhealth':
+        data_frame = pd.read_json("~/wsq/eval_data/health_claims_processed.jsonl")
+    if datasetname == 'ASQA':
+        data_frame = pd.read_json("~/wsq/eval_data/asqa_eval_gtr_top100.json")
+    if datasetname == 'FactScore':
+        data_frame = pd.read_json("~/wsq/eval_data/factscore_unlabeled_alpaca_13b_retrieval.jsonl")
+    
+
+
+    if args.debug:
+        data_frame = data_frame.sample(100)
+    dataset = []
+    for _,row in data_frame.iterrows:
+
+        # create a new example object for each row
+        dataset.append(
+            Example(task_id=row['id'],              # eval数据集中有id
+                    question=row['question'],       # left_context即为question
+                    answer=row['answers'],          # 将ground_truth作为answer
+                    crossfile_context=row['ctxs'])  # eval中已经过初筛
+        )
+    return dataset
+
 
 def load_train_and_valid_dataset(validation_split=0.2, random_seed=42):
     """
@@ -94,10 +120,10 @@ def construct_dataset(raw_data, num_samples):
         
         # create a new example object
         examples.append(
-            Example(task_id=task_id,            # 数据集中有task_id
-                    question=question,      # left_context即为question
-                    answer=answer,         # 将ground_truth作为answer
-                    crossfile_context=crossfile_context) #初筛后的top100个文档
+            Example(task_id=task_id,                        # 数据集中有task_id
+                    question=question,                      # left_context即为question
+                    answer=answer,                          # 将ground_truth作为answer
+                    crossfile_context=crossfile_context)    #初筛后的top100个文档
         )
 
     return examples

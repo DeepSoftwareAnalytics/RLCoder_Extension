@@ -10,6 +10,7 @@ from generator import Generator
 from bm25 import TaskSpecificBM25
 from retriever import Retriever, tokenize
 from datasets import load_test_dataset, load_train_and_valid_dataset, construct_dataset, Blank
+from utils.eval import compute_acc
 
 from transformers import get_linear_schedule_with_warmup
 from torch.optim import AdamW
@@ -111,7 +112,7 @@ class CustomDataset(Dataset):
         return torch.tensor(query_tokens_id, dtype=torch.long), torch.tensor(candidate_tokens_id, dtype=torch.long), torch.tensor(self.labels[idx], dtype=torch.long)
 
 def run(args):
-    # popqa_eval = load_test_dataset(args,"popqa")
+    popqa_eval = load_test_dataset(args,"popqa")
 
     training_raw_data, eval_raw_data = load_train_and_valid_dataset()
     # args.data_per_epoch = len(training_raw_data)
@@ -120,6 +121,10 @@ def run(args):
     all_eval_examples = {
         "alpaca_eval": eval_all_examples,
         # "popqa_eval": popqa_eval,
+        # "arc_eval": arc_eval,
+        # "pubhealth_eval": pubhealth_eval,
+        # "ASQA_eval": ASQA_eval,
+        # "FactScore_eval": FactScore_eval,
     }
 
 
@@ -145,10 +150,8 @@ def run(args):
     
     if args.eval:
         table = PrettyTable()
-        table.field_names = ["Method", "Dataset", "Total Samples", "Loss", "PPL", "EM", "ES", "ID_EM", "ID_F1", "Time (sec)"]
+        table.field_names = ["Method", "Dataset", "Total Samples", "Loss", "PPL", "EM", "ACC", "FS", "RG", "MAU", "PRE", "REC", "Time (sec)"]
 
-        eval_table = PrettyTable()
-        eval_table.field_names = ["Method", "Dataset", "Total Samples", "Loss", "PPL", "count", "all", "self", "slib", "plib", "class", "file", "project", "Time (sec)"]
         
         for name, examples in all_eval_examples.items():
             start_time = time.time()
@@ -180,14 +183,12 @@ def run(args):
                 with open(f"{args.output_dir}/{name}/prediction.jsonl", "w", encoding="utf-8") as f_pred:
                     for example, temp_generation in zip(examples, temp_generations):
                         f_pred.write(json.dumps({"task_id": example.task_id, "pred": temp_generation}) + "\n")      
+                if name == "popqa_eval":
+                    results = compute_acc(f"{args.output_dir}/{name}", "data/cceval/python/test.jsonl")
 
-            if 'codereval' in name:
-                eval_table.add_row(['raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["count"], results["all"], results["self"], results["slib"], results["plib"], results["class"], results["file"], results["project"], round(time.time() - start_time, 1)])
-            else:
-                table.add_row(['raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["es"], results["id_em"], results["id_f1"], round(time.time() - start_time, 1)])
+            table.add_row(['raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["acc"], results["fs"], results["rg"], results["mau"], results["pre"],results["rec"], round(time.time() - start_time, 1)])
 
             print(table)
-            print(eval_table)
         
     else:
         print("data_per_epoch:{}, batch_size:{}, sample_number:{}, epoch:{}, inner_epoch:{}, lr:{}".format(args.data_per_epoch, args.batch_size,args.sample_number,args.epoch,args.inner_epoch,args.lr))
