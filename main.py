@@ -107,7 +107,6 @@ class CustomDataset(Dataset):
     
     def __getitem__(self, idx):
         query_tokens_id = tokenize(self.queries[idx], self.tokenizer, self.max_query_length, True)
-        # candidates中cross_context结构为dict
         candidate_tokens_id = [tokenize(str(x), self.tokenizer, self.max_candidate_length, False) for x in self.candidates[idx]]
         return torch.tensor(query_tokens_id, dtype=torch.long), torch.tensor(candidate_tokens_id, dtype=torch.long), torch.tensor(self.labels[idx], dtype=torch.long)
 
@@ -120,7 +119,7 @@ def run(args):
 
     all_eval_examples = {
         "alpaca_eval": eval_all_examples,
-        # "popqa_eval": popqa_eval,
+        "popqa_eval": popqa_eval,
         # "arc_eval": arc_eval,
         # "pubhealth_eval": pubhealth_eval,
         # "ASQA_eval": ASQA_eval,
@@ -165,7 +164,7 @@ def run(args):
 
                 losses = generator.evaluate(examples, retrieved_context)
 
-                results = {"em": "-","es": "-","id_em": "-","id_f1": "-"}
+                results = {"em": "-","acc": "-","fs": "-","rg": "-","mau": "-","pre": "-","rec": "-"}
                 if args.enable_generation:
                     generations = generator.generate(temp_examples, retrieved_context, args.generator_max_generation_length)
 
@@ -184,7 +183,7 @@ def run(args):
                     for example, temp_generation in zip(examples, temp_generations):
                         f_pred.write(json.dumps({"task_id": example.task_id, "pred": temp_generation}) + "\n")      
                 if name == "popqa_eval":
-                    results = compute_acc(f"{args.output_dir}/{name}", "data/cceval/python/test.jsonl")
+                    results = compute_acc(f"{args.output_dir}/{name}", "~/wsq/eval_data/popqa_longtail_w_gs.jsonl")
 
             table.add_row(['raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["acc"], results["fs"], results["rg"], results["mau"], results["pre"],results["rec"], round(time.time() - start_time, 1)])
 
@@ -393,10 +392,10 @@ if __name__ == "__main__":
     parser.add_argument("--retriever_batch_size_per_gpu", default=64, type=int, help="Retriever batch size per GPU")
     # parser.add_argument("--retriever_batch_size_per_gpu", default=16, type=int, help="Retriever batch size per GPU")
     parser.add_argument("--disable_retriever", action="store_true", help="Disable the retriever")
-    parser.add_argument("--retriever_query_context_length", default=256, type=int, help="Retriever query context length")
-    parser.add_argument("--retriever_candidate_context_length", default=512, type=int, help="Retriever candidate context length")
-    # parser.add_argument("--retriever_query_context_length", default=128, type=int, help="Retriever query context length")
-    # parser.add_argument("--retriever_candidate_context_length", default=256, type=int, help="Retriever candidate context length")
+    # parser.add_argument("--retriever_query_context_length", default=256, type=int, help="Retriever query context length")
+    # parser.add_argument("--retriever_candidate_context_length", default=512, type=int, help="Retriever candidate context length")
+    parser.add_argument("--retriever_query_context_length", default=128, type=int, help="Retriever query context length")
+    parser.add_argument("--retriever_candidate_context_length", default=256, type=int, help="Retriever candidate context length")
 
     parser.add_argument("--inference_type", default="baseline", type=str, help="Inference type")
     parser.add_argument("--output_dir", default="results/baseline", type=str, help="Output directory")
@@ -421,7 +420,6 @@ if __name__ == "__main__":
     parser.add_argument("--inner_epoch", default=1, type=int, help="Number of inner training epochs")
     # parser.add_argument("--batch_size", default=16, type=int, help="Batch size")
     parser.add_argument("--batch_size", default=8, type=int, help="Batch size")
-    # parser.add_argument("--sample_number", default=10, type=int, help="Number of samples")
     # parser.add_argument("--sample_number", default=10, type=int, help="Number of samples")
     parser.add_argument("--sample_number", default=5, type=int, help="Number of samples")
     parser.add_argument("--data_per_epoch", default=2000, type=int, help="Amount of data per epoch")

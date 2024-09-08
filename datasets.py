@@ -45,22 +45,20 @@ def load_test_dataset(args, datasetname):
     :return: The loaded dataset.
     """
     if datasetname == 'popqa':
-        data_frame = pd.read_json("~/wsq/eval_data/popqa_longtail_w_gs.jsonl")
+        data_frame = pd.read_json("~/wsq/eval_data/popqa_longtail_w_gs.jsonl", lines=True)
     if datasetname == 'arc':
-        data_frame = pd.read_json("~/wsq/eval_data/arc_challenge_processed.jsonl")
+        data_frame = pd.read_json("~/wsq/eval_data/arc_challenge_processed.jsonl", lines=True)
     if datasetname == 'pubhealth':
-        data_frame = pd.read_json("~/wsq/eval_data/health_claims_processed.jsonl")
+        data_frame = pd.read_json("~/wsq/eval_data/health_claims_processed.jsonl", lines=True)
     if datasetname == 'ASQA':
-        data_frame = pd.read_json("~/wsq/eval_data/asqa_eval_gtr_top100.json")
+        data_frame = pd.read_json("~/wsq/eval_data/asqa_eval_gtr_top100.json", lines=True)
     if datasetname == 'FactScore':
-        data_frame = pd.read_json("~/wsq/eval_data/factscore_unlabeled_alpaca_13b_retrieval.jsonl")
+        data_frame = pd.read_json("~/wsq/eval_data/factscore_unlabeled_alpaca_13b_retrieval.jsonl", lines=True)
     
-
-
     if args.debug:
         data_frame = data_frame.sample(100)
     dataset = []
-    for _,row in data_frame.iterrows:
+    for _,row in data_frame.iterrows():
 
         # create a new example object for each row
         dataset.append(

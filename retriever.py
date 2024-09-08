@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 from datasets import Blank
 
-def tokenize(text, tokenizer, max_length, is_query, extracted_import=''):
+def tokenize(text, tokenizer, max_length, is_query):
     """
     Converts text to a list of token ids.
     :param text: The text to be converted
@@ -14,18 +14,15 @@ def tokenize(text, tokenizer, max_length, is_query, extracted_import=''):
     :param is_query: A flag indicating whether the text is a query
     :return: A list of token ids
     """
-    if extracted_import:
-        # import_tokens = tokenizer.tokenize(extracted_import)[-127:] + [tokenizer.sep_token]
-        import_tokens = []
-    else:
-        import_tokens = []
-
     tokens = tokenizer.tokenize(text)
+    # special token: CLS SEP encoder-only
+    extra_token = 3
     if is_query:
-        tokens = tokens[-(max_length - len(import_tokens)) + 4:]
+        tokens = tokens[-(max_length - extra_token):]
     else:
-        tokens = tokens[:(max_length - len(import_tokens)) - 4]
-    tokens = [tokenizer.cls_token, "<encoder-only>", tokenizer.sep_token] + import_tokens + tokens + [tokenizer.sep_token]
+        tokens = tokens[:(max_length - extra_token)]
+    # construct the tokensequence
+    tokens = [tokenizer.cls_token, "<encoder-only>", tokenizer.sep_token] + tokens + [tokenizer.sep_token]
     tokens_id = tokenizer.convert_tokens_to_ids(tokens)
 
     padding_length = max_length - len(tokens_id)
@@ -54,7 +51,7 @@ class CustomDataset(Dataset):
     
     def __getitem__(self, idx):
         text = str(self.examples[idx])
-        tokens_id = tokenize(text, self.tokenizer, self.max_length, self.query, '')
+        tokens_id = tokenize(text, self.tokenizer, self.max_length, self.query)
         return torch.tensor(tokens_id, dtype=torch.long)
 
 

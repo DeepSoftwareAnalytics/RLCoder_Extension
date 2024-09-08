@@ -15,7 +15,7 @@ def match(prediction, ground_truth):
             return 1
     return 0
 
-def compute_metric(output_dir, ground_truth_dir):
+def compute_acc(output_dir, ground_truth_dir):
     """
     计算准确率 (acc)，即预测答案和真实答案完全匹配的比例
     :param output_dir: 生成的预测结果文件 (JSONL)
