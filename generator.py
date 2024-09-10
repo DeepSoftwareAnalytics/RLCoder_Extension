@@ -175,21 +175,71 @@ class Generator:
         Returns:
             A list of generated answer.
         """
-        generated_answer = []
-        dataset = CustomDataset(self.args, self.tokenizer, examples, retrieved_context,generation=True)
-        sampler = SequentialSampler(dataset)
-        dataloader = DataLoader(dataset, sampler=sampler, batch_size=self.args.generator_batch_size, num_workers=self.args.num_workers)
-        if hasattr(self.model, "module"):
-            self.model.module.max_generation_length = max_generation_length
-        else:
-            self.model.max_generation_length = max_generation_length
+        # generated_answer = []
+        # dataset = CustomDataset(self.args, self.tokenizer, examples, retrieved_context,generation=True)
+        # sampler = SequentialSampler(dataset)
+        # dataloader = DataLoader(dataset, sampler=sampler, batch_size=self.args.generator_batch_size, num_workers=self.args.num_workers)
+        # if hasattr(self.model, "module"):
+        #     self.model.module.max_generation_length = max_generation_length
+        # else:
+        #     self.model.max_generation_length = max_generation_length
 
+        # pbar = tqdm(dataloader, disable=not self.args.enable_tqdm, desc="Generating")
+        # with torch.no_grad():
+        #     for batch in pbar:
+        #         generated_answer.append(self.model(batch.cuda()))
+        # generated_answer = torch.cat(generated_answer,0)
+        # return  [self.tokenizer.decode(generated_id, skip_special_tokens=True) for generated_id in generated_answer]
+        generated_answer = []
+        
+        # 创建自定义数据集，设置 generation=True
+        dataset = CustomDataset(self.args, self.tokenizer, examples, retrieved_context, generation=True)
+        sampler = SequentialSampler(dataset)
+        
+        # 使用 DataLoader 加载数据集
+        dataloader = DataLoader(
+            dataset, 
+            sampler=sampler, 
+            batch_size=self.args.generator_batch_size, 
+            num_workers=self.args.num_workers
+        )
+        
+        # 使用 base_model 生成文本，而不是 self.model.generate
+        model_to_use = self.model.module.base_model if hasattr(self.model, "module") else self.model.base_model
+
+        model_to_use.config.max_length = max_generation_length
+
+        # 使用 tqdm 显示进度条
         pbar = tqdm(dataloader, disable=not self.args.enable_tqdm, desc="Generating")
+
         with torch.no_grad():
             for batch in pbar:
-                generated_answer.append(self.model(batch.cuda()))
-        generated_answer = torch.cat(generated_answer,0)
-        return  [self.tokenizer.decode(generated_id, skip_special_tokens=True) for generated_id in generated_answer]
+                # 确保 batch 在 GPU 上
+                batch = batch.cuda()
 
+                # 创建 attention_mask，并确保它在 GPU 上
+                attention_mask = batch.ne(self.tokenizer.pad_token_id).cuda()
+
+                # 调用生成方法，确保生成的最大长度为上下文长度 + 生成最大长度
+                generated_ids = model_to_use.generate(
+                    batch,
+                    attention_mask=attention_mask,  # 确保 attention_mask 也在 GPU 上
+                    max_length=self.args.generator_max_context_length + max_generation_length,
+                    pad_token_id=self.tokenizer.pad_token_id
+                )
+                generated_answer.append(generated_ids)
+
+        # 找出生成序列中的最大长度
+        max_len = max([generated.size(1) for generated in generated_answer])
+        
+        # 使用 torch.nn.functional.pad 对生成的序列进行填充，确保长度一致
+        generated_answer = [torch.nn.functional.pad(generated, (0, max_len - generated.size(1)), 
+                        value=self.tokenizer.pad_token_id) for generated in generated_answer]
+
+        # 拼接生成的答案
+        generated_answer = torch.cat(generated_answer, 0)
+
+        # 解码生成的 ID 序列为文本
+        return [self.tokenizer.decode(generated_id, skip_special_tokens=True) for generated_id in generated_answer]
 
 

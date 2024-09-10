@@ -62,11 +62,15 @@ def retrieve_context(args, examples, bm25, retriever, dataset_name, is_training=
         if inference_type == "unixcoder":
             bm25_topk = 50 
         elif inference_type == "unixcoder_with_rl":
-            bm25_topk = args.sample_number * 10 
+            # bm25_topk = args.sample_number * 10 
+            # eval's cross_context numb are 25
+            # and if candidate_context numb is big, token will overflow
+            bm25_topk = 15
             unixcoder_topk = args.sample_number 
 
         queries = [example.question for example in examples]
-        candidate_context = bm25[dataset_name].query([x.task_id for x in examples], queries, topk=bm25_topk)     
+        candidate_context = bm25[dataset_name].query([x.task_id for x in examples], queries, topk=bm25_topk)
+
         if args.enable_repocoder and inference_type == 'unixcoder_with_rl':
             _, retrieved_context = retrieve_context(args, examples, bm25, retriever_RLCoder, dataset_name, inference_type="unixcoder") 
             generations = generator.generate(examples, retrieved_context, args.generator_max_generation_length)
@@ -113,12 +117,12 @@ class CustomDataset(Dataset):
 def run(args):
     popqa_eval = load_test_dataset(args,"popqa")
 
-    training_raw_data, eval_raw_data = load_train_and_valid_dataset()
+    # training_raw_data, eval_raw_data = load_train_and_valid_dataset()
     # args.data_per_epoch = len(training_raw_data)
-    eval_all_examples = construct_dataset(eval_raw_data, 100 if args.debug else 1000)
+    # eval_all_examples = construct_dataset(eval_raw_data, 100 if args.debug else 1000)
 
     all_eval_examples = {
-        "alpaca_eval": eval_all_examples,
+        # "alpaca_eval": eval_all_examples,
         "popqa_eval": popqa_eval,
         # "arc_eval": arc_eval,
         # "pubhealth_eval": pubhealth_eval,
@@ -161,7 +165,6 @@ def run(args):
                 
             for _ in range(args.forward_generation_times):
                 _, retrieved_context = retrieve_context(args, temp_examples, bm25, retriever, name)
-
                 losses = generator.evaluate(examples, retrieved_context)
 
                 results = {"em": "-","acc": "-","fs": "-","rg": "-","mau": "-","pre": "-","rec": "-"}
@@ -183,7 +186,7 @@ def run(args):
                     for example, temp_generation in zip(examples, temp_generations):
                         f_pred.write(json.dumps({"task_id": example.task_id, "pred": temp_generation}) + "\n")      
                 if name == "popqa_eval":
-                    results = compute_acc(f"{args.output_dir}/{name}", "~/wsq/eval_data/popqa_longtail_w_gs.jsonl")
+                    results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/popqa_longtail_w_gs.jsonl")
 
             table.add_row(['raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["acc"], results["fs"], results["rg"], results["mau"], results["pre"],results["rec"], round(time.time() - start_time, 1)])
 
@@ -389,13 +392,13 @@ if __name__ == "__main__":
 
     # parser.add_argument("--retriever_model_path", default="microsoft/unixcoder-base", type=str, help="Retriever model path")
     parser.add_argument("--retriever_model_path", default="facebook/contriever-msmarco", type=str, help="Retriever model path")
-    parser.add_argument("--retriever_batch_size_per_gpu", default=64, type=int, help="Retriever batch size per GPU")
-    # parser.add_argument("--retriever_batch_size_per_gpu", default=16, type=int, help="Retriever batch size per GPU")
+    # parser.add_argument("--retriever_batch_size_per_gpu", default=64, type=int, help="Retriever batch size per GPU")
+    parser.add_argument("--retriever_batch_size_per_gpu", default=16, type=int, help="Retriever batch size per GPU")
     parser.add_argument("--disable_retriever", action="store_true", help="Disable the retriever")
-    # parser.add_argument("--retriever_query_context_length", default=256, type=int, help="Retriever query context length")
-    # parser.add_argument("--retriever_candidate_context_length", default=512, type=int, help="Retriever candidate context length")
-    parser.add_argument("--retriever_query_context_length", default=128, type=int, help="Retriever query context length")
-    parser.add_argument("--retriever_candidate_context_length", default=256, type=int, help="Retriever candidate context length")
+    parser.add_argument("--retriever_query_context_length", default=256, type=int, help="Retriever query context length")
+    parser.add_argument("--retriever_candidate_context_length", default=512, type=int, help="Retriever candidate context length")
+    # parser.add_argument("--retriever_query_context_length", default=128, type=int, help="Retriever query context length")
+    # parser.add_argument("--retriever_candidate_context_length", default=256, type=int, help="Retriever candidate context length")
 
     parser.add_argument("--inference_type", default="baseline", type=str, help="Inference type")
     parser.add_argument("--output_dir", default="results/baseline", type=str, help="Output directory")

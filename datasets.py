@@ -45,15 +45,15 @@ def load_test_dataset(args, datasetname):
     :return: The loaded dataset.
     """
     if datasetname == 'popqa':
-        data_frame = pd.read_json("~/wsq/eval_data/popqa_longtail_w_gs.jsonl", lines=True)
+        data_frame = pd.read_json("eval_data/popqa_longtail_w_gs.jsonl", lines=True)
     if datasetname == 'arc':
-        data_frame = pd.read_json("~/wsq/eval_data/arc_challenge_processed.jsonl", lines=True)
+        data_frame = pd.read_json("eval_data/arc_challenge_processed.jsonl", lines=True)
     if datasetname == 'pubhealth':
-        data_frame = pd.read_json("~/wsq/eval_data/health_claims_processed.jsonl", lines=True)
+        data_frame = pd.read_json("eval_data/health_claims_processed.jsonl", lines=True)
     if datasetname == 'ASQA':
-        data_frame = pd.read_json("~/wsq/eval_data/asqa_eval_gtr_top100.json", lines=True)
+        data_frame = pd.read_json("eval_data/asqa_eval_gtr_top100.json", lines=True)
     if datasetname == 'FactScore':
-        data_frame = pd.read_json("~/wsq/eval_data/factscore_unlabeled_alpaca_13b_retrieval.jsonl", lines=True)
+        data_frame = pd.read_json("eval_data/factscore_unlabeled_alpaca_13b_retrieval.jsonl", lines=True)
     
     if args.debug:
         data_frame = data_frame.sample(100)
@@ -64,7 +64,7 @@ def load_test_dataset(args, datasetname):
         dataset.append(
             Example(task_id=row['id'],              # eval数据集中有id
                     question=row['question'],       # left_context即为question
-                    answer=row['answers'],          # 将ground_truth作为answer
+                    answer=row['answers'][0],          # 将ground_truth作为answer
                     crossfile_context=row['ctxs'])  # eval中已经过初筛
         )
     return dataset

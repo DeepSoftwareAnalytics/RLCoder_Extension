@@ -16,9 +16,9 @@ def tokenize(text, tokenizer, max_length, is_query):
     """
     tokens = tokenizer.tokenize(text)
     # special token: CLS SEP encoder-only
-    extra_token = 3
+    extra_token = 4
     if is_query:
-        tokens = tokens[-(max_length - extra_token):]
+        tokens = tokens[-(max_length) - extra_token:]
     else:
         tokens = tokens[:(max_length - extra_token)]
     # construct the tokensequence
@@ -39,12 +39,11 @@ class CustomDataset(Dataset):
     :param examples: The samples in the dataset
     :param is_query: A flag indicating whether it is a query
     """
-    def __init__(self, max_length, tokenizer, examples, query=False, extracted_imports=None):
+    def __init__(self, max_length, tokenizer, examples, query=False):
         self.max_length = max_length
         self.tokenizer = tokenizer
         self.examples = examples
         self.query = query
-        self.extracted_imports = extracted_imports
 
     def __len__(self):
         return len(self.examples)
@@ -82,7 +81,7 @@ class Retriever(nn.Module):
         sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
         return sentence_embeddings
 
-    def retrieve(self, queries, candidate_context, topk, extracted_imports=None):
+    def retrieve(self, queries, candidate_context, topk):
         """
         Retrieval function, used to retrieve the most relevant cross_context from a list of candidates for each query.
         :param queries: A list of queries
@@ -90,13 +89,13 @@ class Retriever(nn.Module):
         :param topk: The number of top-k cross_context to return for each query
         :return: A list of top-k cross_context for each query
         """
-        query_dataset = CustomDataset(self.args.retriever_query_context_length, self.tokenizer, queries, query=True, extracted_imports=extracted_imports)
+        query_dataset = CustomDataset(self.args.retriever_query_context_length, self.tokenizer, queries, query=True)
         query_dataloader = DataLoader(query_dataset, batch_size=self.args.retriever_batch_size, shuffle=False, num_workers=self.args.num_workers)
         candidate_numbers = [len(x) for x in candidate_context]
         candidate_context = [x for y in candidate_context for x in y]
         context_dataset = CustomDataset(self.args.retriever_candidate_context_length, self.tokenizer, candidate_context, query=False)
         context_dataloader = DataLoader(context_dataset, batch_size=self.args.retriever_batch_size, shuffle=False, num_workers=self.args.num_workers)
-        context_dataloader = tqdm(context_dataloader, desc="Encoding context") if self.args.enable_tqdm else context_dataloader
+        # context_dataloader = tqdm(context_dataloader, desc="Encoding context") if self.args.enable_tqdm else context_dataloader
 
         query_embeddings = []
         context_embeddings = []
