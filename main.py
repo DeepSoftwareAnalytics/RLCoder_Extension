@@ -116,7 +116,7 @@ class CustomDataset(Dataset):
 
 def run(args):
     popqa_eval = load_test_dataset(args,"popqa")
-
+    
     # training_raw_data, eval_raw_data = load_train_and_valid_dataset()
     # args.data_per_epoch = len(training_raw_data)
     # eval_all_examples = construct_dataset(eval_raw_data, 100 if args.debug else 1000)
@@ -124,6 +124,7 @@ def run(args):
     all_eval_examples = {
         # "alpaca_eval": eval_all_examples,
         "popqa_eval": popqa_eval,
+        #"triviaqa_eval": triviaqa_eval,
         # "arc_eval": arc_eval,
         # "pubhealth_eval": pubhealth_eval,
         # "ASQA_eval": ASQA_eval,
@@ -187,7 +188,13 @@ def run(args):
                         f_pred.write(json.dumps({"task_id": example.task_id, "pred": temp_generation}) + "\n")      
                 if name == "popqa_eval":
                     results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/popqa_longtail_w_gs.jsonl")
-
+                if name == "arc_eval":
+                    results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/arc_challenge_processed.jsonl", True)
+                if name == "pubhealth_eval":
+                    results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/health_claims_processed.jsonl")
+                if name == "triviaqa_eval":    
+                    results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/triviaqa_test_w_gs.jsonl")
+                
             table.add_row(['raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["acc"], results["fs"], results["rg"], results["mau"], results["pre"],results["rec"], round(time.time() - start_time, 1)])
 
             print(table)

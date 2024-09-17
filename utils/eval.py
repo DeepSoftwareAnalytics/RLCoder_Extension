@@ -17,7 +17,7 @@ def match(prediction, ground_truth):
             return 1
     return 0
 
-def compute_acc(output_dir, ground_truth_dir):
+def compute_acc(output_dir, ground_truth_dir, arc=False):
     """
     计算准确率 (acc)，即预测答案和真实答案完全匹配的比例
     :param output_dir: 生成的预测结果文件 (JSONL)
@@ -32,11 +32,18 @@ def compute_acc(output_dir, ground_truth_dir):
             predictions.append(data['pred'].strip())  # 收集模型预测的答案
 
     # 读取真实答案
-    ground_truths = []
-    with open(ground_truth_dir, 'r', encoding='utf-8') as gt_file:
-        for line in gt_file:
-            data = json.loads(line)
-            ground_truths.append(data['answers'])  # 将真实答案作为列表传入
+    if arc == False :
+        ground_truths = []
+        with open(ground_truth_dir, 'r', encoding='utf-8') as gt_file:
+            for line in gt_file:
+                data = json.loads(line)
+                ground_truths.append(data['answers'])  # 将真实答案作为列表传入
+    else :
+        ground_truths = []
+        with open(ground_truth_dir, 'r', encoding='utf-8') as gt_file:
+            for line in gt_file:
+                data = json.loads(line)
+                ground_truths.append(data['answerKey'])  # 将真实答案作为列表传入
 
     # 调用 accuracy 方法
     # acc = accuracy(predictions, ground_truths)
@@ -48,4 +55,5 @@ def compute_acc(output_dir, ground_truth_dir):
     }
         f.write(json.dumps(res, indent=2))
     return acc
+
    

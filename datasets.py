@@ -50,6 +50,8 @@ def load_test_dataset(args, datasetname):
         data_frame = pd.read_json("eval_data/arc_challenge_processed.jsonl", lines=True)
     if datasetname == 'pubhealth':
         data_frame = pd.read_json("eval_data/health_claims_processed.jsonl", lines=True)
+    if datasetname == 'triviaqa':
+        data_frame = pd.read_json("eval_data/triviaqa_test_w_gs.jsonl", lines=True)
     if datasetname == 'ASQA':
         data_frame = pd.read_json("eval_data/asqa_eval_gtr_top100.json", lines=True)
     if datasetname == 'FactScore':
@@ -58,15 +60,46 @@ def load_test_dataset(args, datasetname):
     if args.debug:
         data_frame = data_frame.sample(100)
     dataset = []
-    for _,row in data_frame.iterrows():
+    if datasetname == 'popqa' or 'triviaqa':
+        for _,row in data_frame.iterrows():
 
-        # create a new example object for each row
-        dataset.append(
-            Example(task_id=row['id'],              # eval数据集中有id
-                    question=row['question'],       # left_context即为question
-                    answer=row['answers'][0],          # 将ground_truth作为answer
-                    crossfile_context=row['ctxs'])  # eval中已经过初筛
-        )
+            # create a new example object for each row
+            dataset.append(
+                Example(task_id=row['id'],              # eval数据集中有id
+                        question=row['question'],       # left_context即为question
+                        answer=row['answers'][0],       # 将ground_truth作为answer
+                        crossfile_context=row['ctxs'])  # eval数据已经过初筛
+            )
+    if datasetname == 'arc':
+        instruction = 'Given four answer candidates, please choose the best answer choice. '
+        for _,row in data_frame.iterrows():
+            choices = row["choices"]
+            result = ''.join(f" {label}:{text}" for label, text in zip(choices['label'], choices['text']))
+            question = instruction + row['question'] + result 
+            # create a new example object for each row
+            dataset.append(
+                Example(task_id=row['id'],              # eval数据集中有id
+                        question=question,              # left_context即为question
+                        answer=row['answerKey'],        # 将ground_truth作为answer
+                        crossfile_context=row['ctxs'])  # eval数据已经过初筛
+            )   
+
+    if datasetname == 'pubhealth':
+        instruction = "Is the following statement correct or not? Say true if it's correct; otherwise say false. "
+        for _,row in data_frame.iterrows():
+            question = instruction + row['question']
+            # create a new example object for each row
+            dataset.append(
+                Example(task_id=row['id'],              # eval数据集中有id
+                        question=question,              # left_context即为question
+                        answer=row['answers'][0],       # 将ground_truth作为answer
+                        crossfile_context=row['ctxs'])  # eval数据已经过初筛
+            )
+
+    # if datasetname == 'ASQA':
+        
+    # if datasetname == 'FactScore':
+        
     return dataset
 
 
