@@ -53,14 +53,14 @@ def load_test_dataset(args, datasetname):
     if datasetname == 'triviaqa':
         data_frame = pd.read_json("eval_data/triviaqa_test_w_gs.jsonl", lines=True)
     if datasetname == 'ASQA':
-        data_frame = pd.read_json("eval_data/asqa_eval_gtr_top100.json", lines=True)
+        data_frame = pd.read_json("eval_data/asqa_eval_gtr_top100.jsonl", lines=True)
     if datasetname == 'FactScore':
         data_frame = pd.read_json("eval_data/factscore_unlabeled_alpaca_13b_retrieval.jsonl", lines=True)
     
     if args.debug:
         data_frame = data_frame.sample(100)
     dataset = []
-    if datasetname == 'popqa' or 'triviaqa':
+    if datasetname == ('popqa' or 'triviaqa'):
         for _,row in data_frame.iterrows():
 
             # create a new example object for each row
@@ -86,20 +86,33 @@ def load_test_dataset(args, datasetname):
 
     if datasetname == 'pubhealth':
         instruction = "Is the following statement correct or not? Say true if it's correct; otherwise say false. "
-        for _,row in data_frame.iterrows():
+        for index,row in data_frame.iterrows():
             question = instruction + row['question']
             # create a new example object for each row
             dataset.append(
-                Example(task_id=row['id'],              # eval数据集中有id
+                Example(task_id=f"pubhealth_{index}",              # eval数据集中有id
                         question=question,              # left_context即为question
                         answer=row['answers'][0],       # 将ground_truth作为answer
                         crossfile_context=row['ctxs'])  # eval数据已经过初筛
             )
 
-    # if datasetname == 'ASQA':
+    if datasetname == 'ASQA':
+        for index,row in data_frame.iterrows():
+            dataset.append(
+                Example(task_id=f"ASQA_{index}",              # eval数据集中有id
+                        question=row['question'],              # left_context即为question
+                        answer=row['answer'],       # 将ground_truth作为answer
+                        crossfile_context=row['docs'])  # eval数据已经过初筛
+            )
         
-    # if datasetname == 'FactScore':
-        
+    if datasetname == 'FactScore':
+        for index,row in data_frame.iterrows():
+            dataset.append(
+                Example(task_id=f"FactScore_{index}",              # eval数据集中有id
+                        question=row['question'],              # left_context即为question
+                        answer=row['answer'][0],       # 将ground_truth作为answer
+                        crossfile_context=row['ctxs'])  # eval数据已经过初筛
+            )        
     return dataset
 
 
@@ -112,7 +125,7 @@ def load_train_and_valid_dataset(validation_split=0.2, random_seed=42):
     validation_datasets = []
 
     # Load the data
-    data_frame = pd.read_json("~/wsq/data_after/alpaca.json")
+    data_frame = pd.read_json("data/alpaca.json")
 
     # Convert DataFrame to a list of records (each record is a dict)
     data_records = data_frame.to_dict(orient='records')

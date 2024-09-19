@@ -10,7 +10,7 @@ from generator import Generator
 from bm25 import TaskSpecificBM25
 from retriever import Retriever, tokenize
 from datasets import load_test_dataset, load_train_and_valid_dataset, construct_dataset, Blank
-from utils.eval import compute_acc
+from utils.eval import compute_acc,compute_ASQA
 
 from transformers import get_linear_schedule_with_warmup
 from torch.optim import AdamW
@@ -115,7 +115,12 @@ class CustomDataset(Dataset):
         return torch.tensor(query_tokens_id, dtype=torch.long), torch.tensor(candidate_tokens_id, dtype=torch.long), torch.tensor(self.labels[idx], dtype=torch.long)
 
 def run(args):
-    popqa_eval = load_test_dataset(args,"popqa")
+    # popqa_eval = load_test_dataset(args,"popqa")
+    # triviaqa_eval = load_test_dataset(args,"triviaqa")
+    # arc_eval = load_test_dataset(args,"arc")
+    # pubhealth_eval = load_test_dataset(args,"pubhealth")
+    ASQA_eval = load_test_dataset(args,"ASQA")
+    # FactScore_eval = load_test_dataset(args,"FactScore")
     
     # training_raw_data, eval_raw_data = load_train_and_valid_dataset()
     # args.data_per_epoch = len(training_raw_data)
@@ -123,11 +128,11 @@ def run(args):
 
     all_eval_examples = {
         # "alpaca_eval": eval_all_examples,
-        "popqa_eval": popqa_eval,
-        #"triviaqa_eval": triviaqa_eval,
+        # "popqa_eval": popqa_eval,
+        # "triviaqa_eval": triviaqa_eval,
         # "arc_eval": arc_eval,
         # "pubhealth_eval": pubhealth_eval,
-        # "ASQA_eval": ASQA_eval,
+        "ASQA_eval": ASQA_eval,
         # "FactScore_eval": FactScore_eval,
     }
 
@@ -194,7 +199,9 @@ def run(args):
                     results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/health_claims_processed.jsonl")
                 if name == "triviaqa_eval":    
                     results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/triviaqa_test_w_gs.jsonl")
-                
+                if name == "ASQA_eval":
+                    results['em'], results['rg'], results['mau'], results['pre'], results['rec'] = compute_ASQA(f"{args.output_dir}/{name}", "eval_data/asqa_eval_gtr_top100.jsonl")
+                # if neme == "FactScore_eval":
             table.add_row(['raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["acc"], results["fs"], results["rg"], results["mau"], results["pre"],results["rec"], round(time.time() - start_time, 1)])
 
             print(table)
