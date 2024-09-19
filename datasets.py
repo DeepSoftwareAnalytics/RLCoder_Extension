@@ -60,7 +60,7 @@ def load_test_dataset(args, datasetname):
     if args.debug:
         data_frame = data_frame.sample(100)
     dataset = []
-    if datasetname == ('popqa' or 'triviaqa'):
+    if datasetname == 'popqa' or datasetname== 'triviaqa':
         for _,row in data_frame.iterrows():
 
             # create a new example object for each row
@@ -125,18 +125,15 @@ def load_train_and_valid_dataset(validation_split=0.2, random_seed=42):
     validation_datasets = []
 
     # Load the data
-    data_frame = pd.read_json("data/alpaca.json")
+    data_frame = pd.read_json("data/alpaca.jsonl", lines=True)
 
-    # Convert DataFrame to a list of records (each record is a dict)
-    data_records = data_frame.to_dict(orient='records')
-    
-    # Shuffle the data
-    random.seed(random_seed)
-    random.shuffle(data_records)
-    
-    # Split the data into training and validation sets
-    training_datasets, validation_datasets = train_test_split(data_records, test_size=validation_split, random_state=random_seed)
 
+    training_datasets, validation_datasets = train_test_split(
+        data_frame, 
+        test_size=validation_split, 
+        random_state=random_seed, 
+        shuffle=True  # sklearn's train_test_split shuffles by default if shuffle=True
+    )
 
     return training_datasets, validation_datasets
 
@@ -153,7 +150,7 @@ def construct_dataset(raw_data, num_samples):
     
     while len(examples) < num_samples:
         # get an item from dataset
-        entry = raw_data[data_index % len(raw_data)]
+        entry = raw_data.iloc[data_index % len(raw_data)]
         data_index += 1
 
         # get data from columns

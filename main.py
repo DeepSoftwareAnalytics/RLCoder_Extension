@@ -214,54 +214,57 @@ def run(args):
         evaluate_table = {}
         for name, examples in all_eval_examples.items():
             evaluate_table[name] = PrettyTable()
-            if 'codereval' in name:
-                evaluate_table[name].field_names = ["Epoch", "Method", "Dataset", "Total Samples", "Loss", "PPL", "count", "all", "self", "slib", "plib", "class", "file", "project", "Time (sec)"]
-            else:
-                evaluate_table[name].field_names = ["Epoch", "Method", "Dataset", "Total Samples", "Loss", "PPL", "EM", "ES", "ID_EM", "ID_F1", "Time (sec)"]
+            evaluate_table[name].field_names = ["Epoch", "Method", "Dataset", "Total Samples", "Loss", "PPL", "EM", "ACC", "FS", "RG", "MAU", "PRE", "REC", "Time (sec)"]
 
         training_table = PrettyTable()
         training_table.field_names = ["Epoch", "Dataset", "Total Samples", "Rewards", "Training Loss", "Time (sec)"]
 
 
-        # retriever.model.eval()
-        # for name, examples in all_eval_examples.items():
+        retriever.model.eval()
+        for name, examples in all_eval_examples.items():
             
-        #     start_time = time.time()
-        #     temp_examples = copy.deepcopy(examples)
-        #     temp_generations = []
+            start_time = time.time()
+            temp_examples = copy.deepcopy(examples)
+            temp_generations = []
 
                 
-        #     for _ in range(args.forward_generation_times):
-        #         _, retrieved_context = retrieve_context(args, temp_examples, bm25, retriever, name) 
-        #         losses = generator.evaluate(examples, retrieved_context)
+            for _ in range(args.forward_generation_times):
+                _, retrieved_context = retrieve_context(args, temp_examples, bm25, retriever, name) 
+                losses = generator.evaluate(examples, retrieved_context)
 
 
-        #         results = {"em": "-","es": "-","id_em": "-","id_f1": "-"}
-        #         if args.enable_generation:
-        #             generations = generator.generate(temp_examples, retrieved_context, args.generator_max_generation_length)
+                results = {"em": "-","acc": "-","fs": "-","rg": "-","mau": "-","pre": "-","rec": "-"}
+                if args.enable_generation:
+                    generations = generator.generate(temp_examples, retrieved_context, args.generator_max_generation_length)
 
-        #             if not temp_generations:
-        #                 temp_generations = generations
-        #             else:
-        #                 temp_generations = [temp_generations[i] + generations[i] for i in range(len(generations))]
-        #             for i in range(len(temp_examples)):
-        #                 temp_examples[i].question = examples[i].question + temp_generations[i]
+                    if not temp_generations:
+                        temp_generations = generations
+                    else:
+                        temp_generations = [temp_generations[i] + generations[i] for i in range(len(generations))]
+                    for i in range(len(temp_examples)):
+                        temp_examples[i].question = examples[i].question + temp_generations[i]
                         
-        #     if args.enable_generation:
+            if args.enable_generation:
 
-        #         if os.path.exists(f"{args.output_dir}/result_init/{name}") is False:
-        #             os.makedirs(f"{args.output_dir}/result_init/{name}", exist_ok=True)
-        #         with open(f"{args.output_dir}/result_init/{name}/prediction.jsonl", "w", encoding="utf-8") as f_pred:
-        #             for example, temp_generation in zip(examples, temp_generations):
-        #                 f_pred.write(json.dumps({"task_id": example.task_id, "pred": temp_generation}) + "\n")
-              
-
-        #     if 'codereval' in name:
-        #         evaluate_table[name].add_row(["init", 'raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["count"], results["all"], results["self"], results["slib"], results["plib"], results["class"], results["file"], results["project"], round(time.time() - start_time, 1)])
-        #     else:
-        #         evaluate_table[name].add_row(["init", 'raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["es"], results["id_em"], results["id_f1"], round(time.time() - start_time, 1)])
-
-        #     print(evaluate_table[name])
+                if os.path.exists(f"{args.output_dir}/result_init/{name}") is False:
+                    os.makedirs(f"{args.output_dir}/result_init/{name}", exist_ok=True)
+                with open(f"{args.output_dir}/result_init/{name}/prediction.jsonl", "w", encoding="utf-8") as f_pred:
+                    for example, temp_generation in zip(examples, temp_generations):
+                        f_pred.write(json.dumps({"task_id": example.task_id, "pred": temp_generation}) + "\n")
+                if name == "popqa_eval":
+                    results['acc'] = compute_acc(f"{args.output_dir}/result_init/{name}", "eval_data/popqa_longtail_w_gs.jsonl")
+                if name == "arc_eval":
+                    results['acc'] = compute_acc(f"{args.output_dir}/result_init/{name}", "eval_data/arc_challenge_processed.jsonl", True)
+                if name == "pubhealth_eval":
+                    results['acc'] = compute_acc(f"{args.output_dir}/result_init/{name}", "eval_data/health_claims_processed.jsonl")
+                if name == "triviaqa_eval":    
+                    results['acc'] = compute_acc(f"{args.output_dir}/result_init/{name}", "eval_data/triviaqa_test_w_gs.jsonl")
+                if name == "ASQA_eval":
+                    results['em'], results['rg'], results['mau'], results['pre'], results['rec'] = compute_ASQA(f"{args.output_dir}/result_init/{name}", "eval_data/asqa_eval_gtr_top100.jsonl")
+                # if neme == "FactScore_eval":              
+            
+            evaluate_table[name].add_row(["init", 'raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["acc"], results["fs"], results["rg"], results["mau"], results["pre"],results["rec"], round(time.time() - start_time, 1)])
+            print(evaluate_table[name])
 
 
         for epoch in range(args.epoch):
@@ -270,10 +273,7 @@ def run(args):
             start_time = time.time()
             results = {}
             results["Epoch"] = epoch
-
-
             training_examples = construct_dataset(training_raw_data, 100 if args.debug else args.data_per_epoch)
-
             #!!!
             queries, retrieved_context = retrieve_context(args, training_examples, bm25, retriever, "alpaca_training_{}".format(epoch), True)
 
@@ -319,7 +319,7 @@ def run(args):
                             _, retrieved_context = retrieve_context(args, temp_examples, bm25, retriever, name) 
                             losses = generator.evaluate(examples, retrieved_context)
 
-                            results = {"em": "-","es": "-","id_em": "-","id_f1": "-"}
+                            results = {"em": "-","acc": "-","fs": "-","rg": "-","mau": "-","pre": "-","rec": "-"}
                             if args.enable_generation:
                                 generations = generator.generate(temp_examples, retrieved_context, args.generator_max_generation_length)
 
@@ -336,11 +336,19 @@ def run(args):
                             with open(f"{args.output_dir}/result_{inner_epoch}/{name}/prediction.jsonl", "w", encoding="utf-8") as f_pred:
                                 for example, generation in zip(examples, temp_generations):
                                     f_pred.write(json.dumps({"task_id": example.task_id, "pred": generation}) + "\n")
-
-                        if 'codereval' in name:
-                            evaluate_table[name].add_row([inner_epoch, 'raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["count"], results["all"], results["self"], results["slib"], results["plib"], results["class"], results["file"], results["project"], round(time.time() - start_time, 1)])
-                        else:
-                            evaluate_table[name].add_row([inner_epoch, 'raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["es"], results["id_em"], results["id_f1"], round(time.time() - start_time, 1)])
+                            if name == "popqa_eval":
+                                results['acc'] = compute_acc(f"{args.output_dir}/result_{inner_epoch}/{name}", "eval_data/popqa_longtail_w_gs.jsonl")
+                            if name == "arc_eval":
+                                results['acc'] = compute_acc(f"{args.output_dir}/result_{inner_epoch}/{name}", "eval_data/arc_challenge_processed.jsonl", True)
+                            if name == "pubhealth_eval":
+                                results['acc'] = compute_acc(f"{args.output_dir}/result_{inner_epoch}/{name}", "eval_data/health_claims_processed.jsonl")
+                            if name == "triviaqa_eval":    
+                                results['acc'] = compute_acc(f"{args.output_dir}/result_{inner_epoch}/{name}", "eval_data/triviaqa_test_w_gs.jsonl")
+                            if name == "ASQA_eval":
+                                results['em'], results['rg'], results['mau'], results['pre'], results['rec'] = compute_ASQA(f"{args.output_dir}/result_{inner_epoch}/{name}", "eval_data/asqa_eval_gtr_top100.jsonl")
+                            # if neme == "FactScore_eval":              
+                        
+                        evaluate_table[name].add_row([inner_epoch, 'raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["acc"], results["fs"], results["rg"], results["mau"], results["pre"],results["rec"], round(time.time() - start_time, 1)])                            
 
                         print(evaluate_table[name])
                     
@@ -363,7 +371,7 @@ def run(args):
                     _, retrieved_context = retrieve_context(args, temp_examples, bm25, retriever, name) 
                     losses = generator.evaluate(examples, retrieved_context)
 
-                    results = {"em": "-","es": "-","id_em": "-","id_f1": "-"}
+                    results = {"em": "-","acc": "-","fs": "-","rg": "-","mau": "-","pre": "-","rec": "-"}
                     if args.enable_generation:
                         generations = generator.generate(temp_examples, retrieved_context, args.generator_max_generation_length)
 
@@ -380,11 +388,19 @@ def run(args):
                     with open(f"{args.output_dir}/result_{epoch}/{name}/prediction.jsonl", "w", encoding="utf-8") as f_pred:
                         for example, generation in zip(examples, temp_generations):
                             f_pred.write(json.dumps({"task_id": example.task_id, "pred": generation}) + "\n")
-
-                if 'codereval' in name:
-                    evaluate_table[name].add_row([epoch, 'raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["count"], results["all"], results["self"], results["slib"], results["plib"], results["class"], results["file"], results["project"], round(time.time() - start_time, 1)])
-                else:
-                    evaluate_table[name].add_row([epoch, 'raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["es"], results["id_em"], results["id_f1"], round(time.time() - start_time, 1)])
+                    if name == "popqa_eval":
+                        results['acc'] = compute_acc(f"{args.output_dir}/result_{epoch}/{name}", "eval_data/popqa_longtail_w_gs.jsonl")
+                    if name == "arc_eval":
+                        results['acc'] = compute_acc(f"{args.output_dir}/result_{epoch}/{name}", "eval_data/arc_challenge_processed.jsonl", True)
+                    if name == "pubhealth_eval":
+                        results['acc'] = compute_acc(f"{args.output_dir}/result_{epoch}/{name}", "eval_data/health_claims_processed.jsonl")
+                    if name == "triviaqa_eval":    
+                        results['acc'] = compute_acc(f"{args.output_dir}/result_{epoch}/{name}", "eval_data/triviaqa_test_w_gs.jsonl")
+                    if name == "ASQA_eval":
+                        results['em'], results['rg'], results['mau'], results['pre'], results['rec'] = compute_ASQA(f"{args.output_dir}/result_{epoch}/{name}", "eval_data/asqa_eval_gtr_top100.jsonl")
+                    # if neme == "FactScore_eval":              
+                
+                evaluate_table[name].add_row([epoch, 'raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["acc"], results["fs"], results["rg"], results["mau"], results["pre"],results["rec"], round(time.time() - start_time, 1)])     
 
                 print(evaluate_table[name])
 
