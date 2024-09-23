@@ -1,7 +1,4 @@
-transformers
 faiss-gpu
-pandas
-scikit-learn
 rank-bm25
 prettytable
 accelerate==0.21.0
