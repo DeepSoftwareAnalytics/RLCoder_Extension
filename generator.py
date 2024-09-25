@@ -35,7 +35,7 @@ class CustomDataset(Dataset):
                 filter_blanks.append(x)
             else:
                 break
-        crossfile_context = "\n".join([str(context) for context in filter_blanks])
+        crossfile_context = "".join([str(context) + '\n' for context in filter_blanks])
 
         # limit cross_contex's length
         crossfile_context = self.tokenizer.encode(crossfile_context[:self.args.generator_max_crossfile_length], add_special_tokens=False)
@@ -45,7 +45,7 @@ class CustomDataset(Dataset):
         infile_context = self.tokenizer.encode(example.question, add_special_tokens=False)[-allowed_prompt_length:]
 
         # join prompt
-        prompt = self.tokenizer.decode(crossfile_context + '\n' + infile_context)
+        prompt = self.tokenizer.decode(crossfile_context + infile_context)
         return prompt
 
 
