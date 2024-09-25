@@ -35,7 +35,7 @@ class CustomDataset(Dataset):
                 filter_blanks.append(x)
             else:
                 break
-        crossfile_context = "\n\n".join([str(context) for context in filter_blanks])
+        crossfile_context = "\n".join([str(context) for context in filter_blanks])
 
         # limit cross_contex's length
         crossfile_context = self.tokenizer.encode(crossfile_context[:self.args.generator_max_crossfile_length], add_special_tokens=False)
@@ -45,7 +45,7 @@ class CustomDataset(Dataset):
         infile_context = self.tokenizer.encode(example.question, add_special_tokens=False)[-allowed_prompt_length:]
 
         # join prompt
-        prompt = self.tokenizer.decode(crossfile_context + infile_context)
+        prompt = self.tokenizer.decode(crossfile_context + '\n' + infile_context)
         return prompt
 
 
@@ -190,39 +190,27 @@ class Generator:
         #         generated_answer.append(self.model(batch.cuda()))
         # generated_answer = torch.cat(generated_answer,0)
         # return  [self.tokenizer.decode(generated_id, skip_special_tokens=True) for generated_id in generated_answer]
-        generated_answer = []
         
+        # code for Self-Rag-7B. Because there are different shape between llama2-7b and self-rag-7b 
+        generated_answer = []
         # 创建自定义数据集，设置 generation=True
         dataset = CustomDataset(self.args, self.tokenizer, examples, retrieved_context, generation=True)
         sampler = SequentialSampler(dataset)
-        
         # 使用 DataLoader 加载数据集
-        dataloader = DataLoader(
-            dataset, 
-            sampler=sampler, 
-            batch_size=self.args.generator_batch_size, 
-            num_workers=self.args.num_workers
-        )
-        
+        dataloader = DataLoader(dataset, sampler=sampler, batch_size=self.args.generator_batch_size, num_workers=self.args.num_workers)
         # 使用 base_model 生成文本，而不是 self.model.generate
         model_to_use = self.model.module.base_model if hasattr(self.model, "module") else self.model.base_model
-
         model_to_use.config.max_length = max_generation_length
-
         # 使用 tqdm 显示进度条
         pbar = tqdm(dataloader, disable=not self.args.enable_tqdm, desc="Generating")
-
         with torch.no_grad():
             for batch in pbar:
                 # 确保 batch 在 GPU 上
                 batch = batch.cuda()
-
                 # 创建 attention_mask，并确保它在 GPU 上
                 attention_mask = batch.ne(self.tokenizer.pad_token_id).cuda()
-
                 # 调用生成方法，确保生成的最大长度为上下文长度 + 生成最大长度
-                generated_ids = model_to_use.generate(
-                    batch,
+                generated_ids = model_to_use.generate(batch,
                     attention_mask=attention_mask,  # 确保 attention_mask 也在 GPU 上
                     max_length=self.args.generator_max_context_length + max_generation_length,
                     pad_token_id=self.tokenizer.pad_token_id

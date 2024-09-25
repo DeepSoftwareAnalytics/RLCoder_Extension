@@ -60,7 +60,7 @@ def load_test_dataset(args, datasetname):
     if args.debug:
         data_frame = data_frame.sample(100)
     dataset = []
-    if datasetname == 'popqa' or datasetname== 'triviaqa':
+    if datasetname == 'popqa' or datasetname == 'triviaqa':
         for _,row in data_frame.iterrows():
 
             # create a new example object for each row

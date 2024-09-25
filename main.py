@@ -115,10 +115,10 @@ class CustomDataset(Dataset):
         return torch.tensor(query_tokens_id, dtype=torch.long), torch.tensor(candidate_tokens_id, dtype=torch.long), torch.tensor(self.labels[idx], dtype=torch.long)
 
 def run(args):
-    # popqa_eval = load_test_dataset(args,"popqa")
-    # triviaqa_eval = load_test_dataset(args,"triviaqa")
-    # arc_eval = load_test_dataset(args,"arc")
-    # pubhealth_eval = load_test_dataset(args,"pubhealth")
+    popqa_eval = load_test_dataset(args,"popqa")
+    triviaqa_eval = load_test_dataset(args,"triviaqa")
+    arc_eval = load_test_dataset(args,"arc")
+    pubhealth_eval = load_test_dataset(args,"pubhealth")
     ASQA_eval = load_test_dataset(args,"ASQA")
     # FactScore_eval = load_test_dataset(args,"FactScore")
     
@@ -128,10 +128,10 @@ def run(args):
 
     all_eval_examples = {
         # "alpaca_eval": eval_all_examples,
-        # "popqa_eval": popqa_eval,
-        # "triviaqa_eval": triviaqa_eval,
-        # "arc_eval": arc_eval,
-        # "pubhealth_eval": pubhealth_eval,
+        "popqa_eval": popqa_eval,
+        "triviaqa_eval": triviaqa_eval,
+        "arc_eval": arc_eval,
+        "pubhealth_eval": pubhealth_eval,
         "ASQA_eval": ASQA_eval,
         # "FactScore_eval": FactScore_eval,
     }
@@ -413,8 +413,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--generator_model_path", default="deepseek-ai/deepseek-coder-1.3b-base", type=str, help="Generator model path")
     parser.add_argument("--generator_batch_size_per_gpu", default=32, type=int, help="Generator batch size per GPU")
-    parser.add_argument("--generator_max_crossfile_length", default=512, type=int, help="Maximum cross-file length for the generator")
-    parser.add_argument("--generator_max_context_length", default=1024, type=int, help="Maximum context length for the generator")
+    parser.add_argument("--generator_max_crossfile_length", default=3584, type=int, help="Maximum cross-file length for the generator")
+    parser.add_argument("--generator_max_context_length", default=4096, type=int, help="Maximum context length for the generator")
     # parser.add_argument("--generator_max_generation_length", default=64, type=int, help="Maximum generation length for the generator")
     parser.add_argument("--generator_max_generation_length", default=100, type=int, help="Maximum generation length for the generator")
 
