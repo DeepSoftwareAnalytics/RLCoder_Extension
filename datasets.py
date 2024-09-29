@@ -1,6 +1,7 @@
 import pandas as pd
 import random
 from sklearn.model_selection import train_test_split
+from utils.prompt import TASK_INST_TRAIN, TASK_INST_EVAL
 class Blank(object):
     def __init__(self, description, content):
         """
@@ -65,53 +66,54 @@ def load_test_dataset(args, datasetname):
 
             # create a new example object for each row
             dataset.append(
-                Example(task_id=row['id'],              # eval数据集中有id
-                        question=row['question'],       # left_context即为question
-                        answer=row['answers'][0],       # 将ground_truth作为answer
-                        crossfile_context=row['ctxs'])  # eval数据已经过初筛
+                Example(task_id=row['id'],              
+                        question=row['question'],       
+                        answer=row['answers'][0],       
+                        crossfile_context=row['ctxs'])  
             )
     if datasetname == 'arc':
-        instruction = 'Given four answer candidates, please choose the best answer choice. '
+        instruction = TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
         for _,row in data_frame.iterrows():
             choices = row["choices"]
             result = ''.join(f" {label}:{text}" for label, text in zip(choices['label'], choices['text']))
             question = instruction + row['question'] + result 
             # create a new example object for each row
             dataset.append(
-                Example(task_id=row['id'],              # eval数据集中有id
-                        question=question,              # left_context即为question
-                        answer=row['answerKey'],        # 将ground_truth作为answer
-                        crossfile_context=row['ctxs'])  # eval数据已经过初筛
+                Example(task_id=row['id'],              
+                        question=question,              
+                        answer=row['answerKey'],        
+                        crossfile_context=row['ctxs'])  
             )   
 
     if datasetname == 'pubhealth':
-        instruction = "Is the following statement correct or not? Say true if it's correct; otherwise say false. "
+        instruction = TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
         for index,row in data_frame.iterrows():
             question = instruction + row['question']
             # create a new example object for each row
             dataset.append(
-                Example(task_id=f"pubhealth_{index}",              # eval数据集中有id
-                        question=question,              # left_context即为question
-                        answer=row['answers'][0],       # 将ground_truth作为answer
-                        crossfile_context=row['ctxs'])  # eval数据已经过初筛
+                Example(task_id=f"pubhealth_{index}",              
+                        question=question,              
+                        answer=row['answers'][0],       
+                        crossfile_context=row['ctxs'])  
             )
 
     if datasetname == 'ASQA':
+        instruction = TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
         for index,row in data_frame.iterrows():
             dataset.append(
-                Example(task_id=f"ASQA_{index}",              # eval数据集中有id
-                        question=row['question'],              # left_context即为question
-                        answer=row['answer'],       # 将ground_truth作为answer
-                        crossfile_context=row['docs'])  # eval数据已经过初筛
+                Example(task_id=f"ASQA_{index}",              
+                        question=row['question'],              
+                        answer=row['answer'],       
+                        crossfile_context=row['docs'])  
             )
         
     if datasetname == 'FactScore':
         for index,row in data_frame.iterrows():
             dataset.append(
-                Example(task_id=f"FactScore_{index}",              # eval数据集中有id
-                        question=row['question'],              # left_context即为question
-                        answer=row['answer'][0],       # 将ground_truth作为answer
-                        crossfile_context=row['ctxs'])  # eval数据已经过初筛
+                Example(task_id=f"FactScore_{index}",             
+                        question=row['question'],              
+                        answer=row['answer'][0],       
+                        crossfile_context=row['ctxs'])  
             )        
     return dataset
 

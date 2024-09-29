@@ -122,12 +122,12 @@ def run(args):
     ASQA_eval = load_test_dataset(args,"ASQA")
     # FactScore_eval = load_test_dataset(args,"FactScore")
     
-    # training_raw_data, eval_raw_data = load_train_and_valid_dataset()
+    training_raw_data, eval_raw_data = load_train_and_valid_dataset()
     # args.data_per_epoch = len(training_raw_data)
-    # eval_all_examples = construct_dataset(eval_raw_data, 100 if args.debug else 1000)
+    eval_all_examples = construct_dataset(eval_raw_data, 100 if args.debug else 1000)
 
     all_eval_examples = {
-        # "alpaca_eval": eval_all_examples,
+        "alpaca_eval": eval_all_examples,
         "popqa_eval": popqa_eval,
         "triviaqa_eval": triviaqa_eval,
         "arc_eval": arc_eval,

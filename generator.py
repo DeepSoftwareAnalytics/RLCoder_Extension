@@ -45,7 +45,9 @@ class CustomDataset(Dataset):
         infile_context = self.tokenizer.encode(example.question, add_special_tokens=False)[-allowed_prompt_length:]
 
         # join prompt
-        prompt = self.tokenizer.decode(crossfile_context + infile_context)
+        # prompt = self.tokenizer.decode(crossfile_context + infile_context)
+        # construct the prompt like self-rag: instruction + question + context, and the instruction is loaded in question when reading the data.
+        prompt = self.tokenizer.decode(infile_context + crossfile_context)
         return prompt
 
 

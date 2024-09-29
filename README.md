@@ -9,7 +9,6 @@ pip install -r requirements.txt
 
 # training
 
-test 
 python main.py --generator_model_path ~/Llama-2-7b-hf --enable_generation --inference_type unixcoder_with_rl --output_dir result/Llama+Contriever_normal --retriever_model_path ~/contriever-msmarco --data_per_epoch 5000
 
 
