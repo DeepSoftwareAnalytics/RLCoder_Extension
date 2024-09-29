@@ -166,5 +166,6 @@ def RG(predictions, ground_truths):
 
 
 def MAU(predictions, ground_truths):
+    # mauve uses gpt-2-large to eval the fluency about the sentence
     mauve_score = mauve.compute_mauve(p_text=predictions, q_text=ground_truths)
     return mauve_score.mauve

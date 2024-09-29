@@ -217,6 +217,7 @@ class Generator:
                     max_length=self.args.generator_max_context_length + max_generation_length,
                     pad_token_id=self.tokenizer.pad_token_id
                 )
+                generated_ids = generated_ids[:, batch.size(1):]
                 generated_answer.append(generated_ids)
 
         # 找出生成序列中的最大长度

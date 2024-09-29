@@ -122,12 +122,12 @@ def run(args):
     ASQA_eval = load_test_dataset(args,"ASQA")
     # FactScore_eval = load_test_dataset(args,"FactScore")
     
-    training_raw_data, eval_raw_data = load_train_and_valid_dataset()
+    # training_raw_data, eval_raw_data = load_train_and_valid_dataset()
     # args.data_per_epoch = len(training_raw_data)
-    eval_all_examples = construct_dataset(eval_raw_data, 100 if args.debug else 1000)
+    # eval_all_examples = construct_dataset(eval_raw_data, 100 if args.debug else 1000)
 
     all_eval_examples = {
-        "alpaca_eval": eval_all_examples,
+        # "alpaca_eval": eval_all_examples,
         "popqa_eval": popqa_eval,
         "triviaqa_eval": triviaqa_eval,
         "arc_eval": arc_eval,
@@ -412,9 +412,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--generator_model_path", default="deepseek-ai/deepseek-coder-1.3b-base", type=str, help="Generator model path")
-    parser.add_argument("--generator_batch_size_per_gpu", default=32, type=int, help="Generator batch size per GPU")
-    parser.add_argument("--generator_max_crossfile_length", default=3584, type=int, help="Maximum cross-file length for the generator")
-    parser.add_argument("--generator_max_context_length", default=4096, type=int, help="Maximum context length for the generator")
+    # parser.add_argument("--generator_batch_size_per_gpu", default=32, type=int, help="Generator batch size per GPU")
+    parser.add_argument("--generator_batch_size_per_gpu", default=16, type=int, help="Generator batch size per GPU")
+    # parser.add_argument("--generator_max_crossfile_length", default=3584, type=int, help="Maximum cross-file length for the generator")
+    # parser.add_argument("--generator_max_context_length", default=4096, type=int, help="Maximum context length for the generator")
+    parser.add_argument("--generator_max_crossfile_length", default=2560, type=int, help="Maximum cross-file length for the generator")
+    parser.add_argument("--generator_max_context_length", default=3072, type=int, help="Maximum context length for the generator")
     # parser.add_argument("--generator_max_generation_length", default=64, type=int, help="Maximum generation length for the generator")
     parser.add_argument("--generator_max_generation_length", default=100, type=int, help="Maximum generation length for the generator")
 
