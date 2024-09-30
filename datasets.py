@@ -72,11 +72,11 @@ def load_test_dataset(args, datasetname):
                         crossfile_context=row['ctxs'])  
             )
     if datasetname == 'arc':
-        instruction = TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
+        instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
         for _,row in data_frame.iterrows():
             choices = row["choices"]
             result = ''.join(f" {label}:{text}" for label, text in zip(choices['label'], choices['text']))
-            question = instruction + row['question'] + result 
+            question = instruction + row['question'] + result + "\n\n### Response:\n" 
             # create a new example object for each row
             dataset.append(
                 Example(task_id=row['id'],              
@@ -86,9 +86,9 @@ def load_test_dataset(args, datasetname):
             )   
 
     if datasetname == 'pubhealth':
-        instruction = TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
+        instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
         for index,row in data_frame.iterrows():
-            question = instruction + row['question']
+            question = instruction + row['question']  + "\n\n### Response:\n"
             # create a new example object for each row
             dataset.append(
                 Example(task_id=f"pubhealth_{index}",              
@@ -98,8 +98,9 @@ def load_test_dataset(args, datasetname):
             )
 
     if datasetname == 'ASQA':
-        instruction = TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
+        instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
         for index,row in data_frame.iterrows():
+            question = instruction + row['question'] + "\n\n### Response:\n"
             dataset.append(
                 Example(task_id=f"ASQA_{index}",              
                         question=row['question'],              
