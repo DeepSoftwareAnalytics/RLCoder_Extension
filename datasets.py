@@ -76,7 +76,7 @@ def load_test_dataset(args, datasetname):
         for _,row in data_frame.iterrows():
             choices = row["choices"]
             result = ''.join(f" {label}:{text}" for label, text in zip(choices['label'], choices['text']))
-            question = instruction + row['question'] + result + "\n\n### Response:\n" 
+            question = instruction + row['question'] + result + "\n\n### The answer is:\n" 
             # create a new example object for each row
             dataset.append(
                 Example(task_id=row['id'],              
@@ -88,7 +88,7 @@ def load_test_dataset(args, datasetname):
     if datasetname == 'pubhealth':
         instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
         for index,row in data_frame.iterrows():
-            question = instruction + row['question']  + "\n\n### Response:\n"
+            question = instruction + row['question']  + "\n\n### The answer is:\n"
             # create a new example object for each row
             dataset.append(
                 Example(task_id=f"pubhealth_{index}",              
