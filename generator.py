@@ -26,28 +26,63 @@ class CustomDataset(Dataset):
     def __len__(self):
         return len(self.examples)
 
-    def construct_prompts(self,example,retrieved_context):
+    # def construct_prompts(self,example,retrieved_context):
 
+    #     filter_blanks = []
+    #     for x in retrieved_context:
+    #         # get cross_context and drop blank
+    #         if x.content != "":
+    #             filter_blanks.append(x)
+    #         else:
+    #             break
+    #     crossfile_context = "\n".join([str(context) for context in filter_blanks])
+    #     crossfile_context = "### Retrieval document:" + crossfile_context
+    #     # limit cross_contex's length
+    #     crossfile_context = self.tokenizer.encode(crossfile_context[:self.args.generator_max_crossfile_length], add_special_tokens=False)
+        
+    #     # limit infile_context's length
+    #     allowed_prompt_length = self.args.generator_max_context_length - len(crossfile_context)
+    #     infile_context = self.tokenizer.encode(example.question, add_special_tokens=False)[-allowed_prompt_length:]
+
+    #     # join prompt
+    #     # prompt = self.tokenizer.decode(crossfile_context + infile_context)
+    #     # construct the prompt like self-rag: instruction + question + context, and the instruction is loaded in question when reading the data.
+    #     prompt = self.tokenizer.decode(infile_context + crossfile_context)
+    #     return prompt
+    def construct_prompts(self, example, retrieved_context):
         filter_blanks = []
         for x in retrieved_context:
-            # get cross_context and drop blank
             if x.content != "":
                 filter_blanks.append(x)
             else:
                 break
+        
+        # 拼接 crossfile_context
         crossfile_context = "\n".join([str(context) for context in filter_blanks])
-
-        # limit cross_contex's length
+        crossfile_context = "### Retrieval document:" + crossfile_context
+        
+        # 限制 crossfile_context 的长度
         crossfile_context = self.tokenizer.encode(crossfile_context[:self.args.generator_max_crossfile_length], add_special_tokens=False)
         
-        # limit infile_context's length
+        # 限制 infile_context 的长度
         allowed_prompt_length = self.args.generator_max_context_length - len(crossfile_context)
         infile_context = self.tokenizer.encode(example.question, add_special_tokens=False)[-allowed_prompt_length:]
-
-        # join prompt
-        # prompt = self.tokenizer.decode(crossfile_context + infile_context)
-        # construct the prompt like self-rag: instruction + question + context, and the instruction is loaded in question when reading the data.
-        prompt = self.tokenizer.decode(infile_context + crossfile_context)
+        
+        # 回答指令
+        instruction = "### The answer is:"
+        instruction_tokens = self.tokenizer.encode(instruction, add_special_tokens=False)
+        
+        # 计算剩余的可用长度
+        remaining_length = self.args.generator_max_context_length - len(infile_context) - len(crossfile_context) - len(instruction_tokens)
+        
+        # 如果剩余长度不够，截断 crossfile_context
+        if remaining_length < 0:
+            crossfile_context = crossfile_context[:remaining_length]
+        
+        # 构建最终的 prompt
+        prompt_tokens = infile_context + crossfile_context + instruction_tokens
+        prompt = self.tokenizer.decode(prompt_tokens)
+    
         return prompt
 
 

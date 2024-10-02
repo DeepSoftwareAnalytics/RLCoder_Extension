@@ -100,7 +100,7 @@ def load_test_dataset(args, datasetname):
     if datasetname == 'ASQA':
         instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
         for index,row in data_frame.iterrows():
-            question = instruction + row['question'] + "\n\n### Response:\n"
+            question = instruction + row['question'] + "\n\n### The answer is:\n"
             dataset.append(
                 Example(task_id=f"ASQA_{index}",              
                         question=row['question'],              
