@@ -74,7 +74,7 @@ def compute_ASQA(output_dir, ground_truth_dir, arc=False):
     with open(f"{output_dir}/prediction.jsonl", 'r', encoding='utf-8') as pred_file:
         for line in pred_file:
             data = json.loads(line)
-            predictions.append(data['pred'].strip().split())  # 收集模型预测的答案
+            predictions.append(data['pred'].strip())  # 收集模型预测的答案 (不需要分词，在标准化时会进行)
 
     # 读取真实答案
     ground_truths = []
