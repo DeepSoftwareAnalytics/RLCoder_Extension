@@ -145,10 +145,10 @@ def RG(predictions, ground_truths):
 
     def rouge_L(prediction, ground_truth):
         # scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
-        # In this function, we calculation rouge score (F1,precision,recall) about ROUGE-L
-        scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=True)
+        # In this function, we calculation rouge score (F1,precision,recall) about ROUGE-1
+        scorer = rouge_scorer.RougeScorer(['rouge1'], use_stemmer=True)
         scores = scorer.score(ground_truth, prediction)
-        return scores['rougeL'].precision, scores['rougeL'].recall, scores['rougeL'].fmeasure
+        return scores['rouge1'].precision, scores['rouge1'].recall, scores['rouge1'].fmeasure
     
     # normalize 
     predictions_norm = [normalize(str, True) for str in predictions]
