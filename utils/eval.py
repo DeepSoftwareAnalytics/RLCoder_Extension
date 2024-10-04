@@ -100,7 +100,7 @@ def compute_ASQA(output_dir, ground_truth_dir, arc=False):
         f.write(json.dumps(res, indent=2))
     return em,rg,mau,pre,rec 
 
-def normalize(str, remain_articles = False):
+def normalize(str):
     """
     将文本进行标准化
     :param str: 表示prediction或groundtruth的文本
@@ -120,10 +120,8 @@ def normalize(str, remain_articles = False):
     # 将全部字母小写
     def lower(text):
         return text.lower()
-    if remain_articles == False:
-        return white_space_fix(remove_articles(remove_punc(lower(str))))
-    else:
-        return white_space_fix(remove_punc(lower(str)))
+
+    return white_space_fix(remove_articles(remove_punc(lower(str))))
     
 
 def EM(predictions, ground_truths):
@@ -132,8 +130,8 @@ def EM(predictions, ground_truths):
         return prediction == ground_truth
     
     # normalize 
-    predictions_norm = [normalize(str, False) for str in predictions]
-    ground_truths_norm = [normalize(str, False) for str in ground_truths]
+    predictions_norm = [normalize(str) for str in predictions]
+    ground_truths_norm = [normalize(str) for str in ground_truths]
     match_count = 0
     for prediction, ground_truth in zip(predictions_norm, ground_truths_norm):
         match_count += exact_match(prediction, ground_truth)
@@ -147,12 +145,13 @@ def RG(predictions, ground_truths):
         # scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
         # In this function, we calculation rouge score (F1,precision,recall) about ROUGE-1
         scorer = rouge_scorer.RougeScorer(['rouge1'], use_stemmer=True)
+        # score(generated_text, reference_text)
         scores = scorer.score(ground_truth, prediction)
         return scores['rouge1'].precision, scores['rouge1'].recall, scores['rouge1'].fmeasure
     
     # normalize 
-    predictions_norm = [normalize(str, True) for str in predictions]
-    ground_truths_norm = [normalize(str, True) for str in ground_truths]
+    predictions_norm = [normalize(str) for str in predictions]
+    ground_truths_norm = [normalize(str) for str in ground_truths]
     p_count = 0
     r_count = 0
     f_count = 0

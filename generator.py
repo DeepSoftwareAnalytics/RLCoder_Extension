@@ -69,7 +69,8 @@ class CustomDataset(Dataset):
         infile_context = self.tokenizer.encode(example.question, add_special_tokens=False)[-allowed_prompt_length:]
         
         # 回答指令
-        instruction = "### The answer is:"
+        # instruction = "### The answer is:"
+        instruction = "### Response:"
         instruction_tokens = self.tokenizer.encode(instruction, add_special_tokens=False)
         
         # 计算剩余的可用长度
