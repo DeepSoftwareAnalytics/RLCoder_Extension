@@ -63,7 +63,7 @@ def load_test_dataset(args, datasetname):
     dataset = []
     if datasetname == 'popqa' or datasetname == 'triviaqa':
         for _,row in data_frame.iterrows():
-
+            question = "### Instruction:\n" + row['question']
             # create a new example object for each row
             dataset.append(
                 Example(task_id=row['id'],              
@@ -72,12 +72,12 @@ def load_test_dataset(args, datasetname):
                         crossfile_context=row['ctxs'])  
             )
     if datasetname == 'arc':
-        instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
+        instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + '\n' + "## Input:\n\n"
         for _,row in data_frame.iterrows():
             choices = row["choices"]
-            result = ''.join(f" {label}:{text}" for label, text in zip(choices['label'], choices['text']))
+            result = '\n'.join(f" {label}:{text}" for label, text in zip(choices['label'], choices['text']))
             # question = instruction + row['question'] + result + "\n\n### The answer is:\n" 
-            question = instruction + row['question'] + result
+            question = instruction + row['question'] + '\n' + result
             # create a new example object for each row
             dataset.append(
                 Example(task_id=row['id'],              
@@ -87,7 +87,7 @@ def load_test_dataset(args, datasetname):
             )   
 
     if datasetname == 'pubhealth':
-        instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
+        instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + '\n' + "## Input:\n\n"
         for index,row in data_frame.iterrows():
             # question = instruction + row['question']  + "\n\n### The answer is:\n"
             question = instruction + row['question'] 
@@ -100,7 +100,7 @@ def load_test_dataset(args, datasetname):
             )
 
     if datasetname == 'ASQA':
-        instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + " ## Input:\n\n "
+        instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + '\n' + "## Input:\n\n"
         for index,row in data_frame.iterrows():
             # question = instruction + row['question'] + "\n\n### The answer is:\n"
             question = instruction + row['question']
@@ -111,14 +111,14 @@ def load_test_dataset(args, datasetname):
                         crossfile_context=row['docs'])  
             )
         
-    if datasetname == 'FactScore':
-        for index,row in data_frame.iterrows():
-            dataset.append(
-                Example(task_id=f"FactScore_{index}",             
-                        question=row['question'],              
-                        answer=row['answer'][0],       
-                        crossfile_context=row['ctxs'])  
-            )        
+    # if datasetname == 'FactScore':
+    #     for index,row in data_frame.iterrows():
+    #         dataset.append(
+    #             Example(task_id=f"FactScore_{index}",             
+    #                     question=row['question'],              
+    #                     answer=row['answer'][0],       
+    #                     crossfile_context=row['ctxs'])  
+    #         )        
     return dataset
 
 

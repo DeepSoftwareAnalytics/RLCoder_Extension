@@ -58,8 +58,7 @@ class CustomDataset(Dataset):
                 break
         
         # 拼接 crossfile_context
-        crossfile_context = "\n".join([str(context) for context in filter_blanks])
-        crossfile_context = "### Retrieval document:" + crossfile_context
+        crossfile_context = "\n### Retrieval document:" + "\n".join([str(context) for context in filter_blanks])
         
         # 限制 crossfile_context 的长度
         crossfile_context = self.tokenizer.encode(crossfile_context[:self.args.generator_max_crossfile_length], add_special_tokens=False)
@@ -70,7 +69,7 @@ class CustomDataset(Dataset):
         
         # 回答指令
         # instruction = "### The answer is:"
-        instruction = "### Response:"
+        instruction = "\n### Response:"
         instruction_tokens = self.tokenizer.encode(instruction, add_special_tokens=False)
         
         # 计算剩余的可用长度
