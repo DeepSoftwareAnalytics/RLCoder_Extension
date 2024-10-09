@@ -67,7 +67,7 @@ def load_test_dataset(args, datasetname):
             # create a new example object for each row
             dataset.append(
                 Example(task_id=row['id'],              
-                        question=row['question'],       
+                        question=question,       
                         answer=row['answers'][0],       
                         crossfile_context=row['ctxs'])  
             )
