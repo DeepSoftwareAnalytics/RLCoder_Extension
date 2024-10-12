@@ -35,7 +35,7 @@ def compute_acc(output_dir, ground_truth_dir, arc=False):
     with open(f"{output_dir}/prediction.jsonl", 'r', encoding='utf-8') as pred_file:
         for line in pred_file:
             data = json.loads(line)
-            predictions.append(data['pred'].strip().split())  # 收集模型预测的答案,并提前进行分词
+            predictions.append(data['pred'].strip())  # 收集模型预测的答案
 
     # 读取真实答案
     if arc == False :

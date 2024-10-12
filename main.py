@@ -64,8 +64,8 @@ def retrieve_context(args, examples, bm25, retriever, dataset_name, is_training=
         elif inference_type == "unixcoder_with_rl":
             # bm25_topk = args.sample_number * 10 
             # eval's cross_context numb are 25
-            # and if candidate_context numb is big, token will overflow
-            bm25_topk = 15
+            # and if candidate_context numb is big, token will overflow(context will be longer than retriever max input length)
+            bm25_topk = 20
             unixcoder_topk = args.sample_number 
 
         queries = [example.question for example in examples]
