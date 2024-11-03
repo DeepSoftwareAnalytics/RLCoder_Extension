@@ -26,29 +26,6 @@ class CustomDataset(Dataset):
     def __len__(self):
         return len(self.examples)
 
-    # def construct_prompts(self,example,retrieved_context):
-
-    #     filter_blanks = []
-    #     for x in retrieved_context:
-    #         # get cross_context and drop blank
-    #         if x.content != "":
-    #             filter_blanks.append(x)
-    #         else:
-    #             break
-    #     crossfile_context = "\n".join([str(context) for context in filter_blanks])
-    #     crossfile_context = "### Retrieval document:" + crossfile_context
-    #     # limit cross_contex's length
-    #     crossfile_context = self.tokenizer.encode(crossfile_context[:self.args.generator_max_crossfile_length], add_special_tokens=False)
-        
-    #     # limit infile_context's length
-    #     allowed_prompt_length = self.args.generator_max_context_length - len(crossfile_context)
-    #     infile_context = self.tokenizer.encode(example.question, add_special_tokens=False)[-allowed_prompt_length:]
-
-    #     # join prompt
-    #     # prompt = self.tokenizer.decode(crossfile_context + infile_context)
-    #     # construct the prompt like self-rag: instruction + question + context, and the instruction is loaded in question when reading the data.
-    #     prompt = self.tokenizer.decode(infile_context + crossfile_context)
-    #     return prompt
     def construct_prompts(self, example, retrieved_context):
         filter_blanks = []
         for x in retrieved_context:
@@ -58,7 +35,8 @@ class CustomDataset(Dataset):
                 break
         
         # 拼接 crossfile_context
-        crossfile_context = "\n### Retrieval document:" + "\n".join([str(context) for context in filter_blanks])
+        # crossfile_context = "\n### Retrieval document:" + "\n".join([str(context) for context in filter_blanks])
+        crossfile_context = "\nHere are some additional reference passages:" + "\n".join([str(context) for context in filter_blanks])
         
         # 限制 crossfile_context 的长度
         crossfile_context = self.tokenizer.encode(crossfile_context[:self.args.generator_max_crossfile_length], add_special_tokens=False)
@@ -69,7 +47,8 @@ class CustomDataset(Dataset):
         
         # 回答指令
         # instruction = "### The answer is:"
-        instruction = "\n### Response:"
+        # instruction = "\n### Response:"
+        instruction = "\nYou can refer to the content of relevant reference passages to answer the questions. Now give me the answer."
         instruction_tokens = self.tokenizer.encode(instruction, add_special_tokens=False)
         
         # 计算剩余的可用长度
@@ -212,22 +191,6 @@ class Generator:
         Returns:
             A list of generated answer.
         """
-        # generated_answer = []
-        # dataset = CustomDataset(self.args, self.tokenizer, examples, retrieved_context,generation=True)
-        # sampler = SequentialSampler(dataset)
-        # dataloader = DataLoader(dataset, sampler=sampler, batch_size=self.args.generator_batch_size, num_workers=self.args.num_workers)
-        # if hasattr(self.model, "module"):
-        #     self.model.module.max_generation_length = max_generation_length
-        # else:
-        #     self.model.max_generation_length = max_generation_length
-
-        # pbar = tqdm(dataloader, disable=not self.args.enable_tqdm, desc="Generating")
-        # with torch.no_grad():
-        #     for batch in pbar:
-        #         generated_answer.append(self.model(batch.cuda()))
-        # generated_answer = torch.cat(generated_answer,0)
-        # return  [self.tokenizer.decode(generated_id, skip_special_tokens=True) for generated_id in generated_answer]
-        
         # code for Self-Rag-7B. Because there are different shape between llama2-7b and self-rag-7b 
         generated_answer = []
         # 创建自定义数据集，设置 generation=True

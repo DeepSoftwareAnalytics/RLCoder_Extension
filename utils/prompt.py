@@ -22,3 +22,8 @@ TASK_INST_EVAL =    {
                     # first one is for baseline, and the second one is for self-rag.
                     "ASQA":  "Answer the following question. The question may be ambiguous and have multiple correct answers, and in that case, you have to provide a long-form answer including all correct answers."
                     }
+
+TASK_INST_EVAL_UAR =    {
+                        "drop": "Please answer the question based on the given passage. Passage: {} Question: {}".format,
+                        "gsm8k": "Answer the math word question step by step. Your answer needs to end with ’The answer is’ Question: {}".format
+                        }

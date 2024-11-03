@@ -1,7 +1,7 @@
 import pandas as pd
 import random
 from sklearn.model_selection import train_test_split
-from utils.prompt import TASK_INST_TRAIN, TASK_INST_EVAL
+from utils.prompt import TASK_INST_TRAIN, TASK_INST_EVAL, TASK_INST_EVAL_UAR
 class Blank(object):
     def __init__(self, description, content):
         """
@@ -45,80 +45,148 @@ def load_test_dataset(args, datasetname):
     :param datasetname: The name of the dataset to load.
     :return: The loaded dataset.
     """
-    if datasetname == 'popqa':
-        data_frame = pd.read_json("eval_data/popqa_longtail_w_gs.jsonl", lines=True)
-    if datasetname == 'arc':
-        data_frame = pd.read_json("eval_data/arc_challenge_processed.jsonl", lines=True)
-    if datasetname == 'pubhealth':
-        data_frame = pd.read_json("eval_data/health_claims_processed.jsonl", lines=True)
-    if datasetname == 'triviaqa':
-        data_frame = pd.read_json("eval_data/triviaqa_test_w_gs.jsonl", lines=True)
-    if datasetname == 'ASQA':
-        data_frame = pd.read_json("eval_data/asqa_eval_gtr_top100.jsonl", lines=True)
-    if datasetname == 'FactScore':
-        data_frame = pd.read_json("eval_data/factscore_unlabeled_alpaca_13b_retrieval.jsonl", lines=True)
+    # if datasetname == 'popqa':
+    #     data_frame = pd.read_json("eval_data/popqa_longtail_w_gs.jsonl", lines=True)
+    # if datasetname == 'arc':
+    #     data_frame = pd.read_json("eval_data/arc_challenge_processed.jsonl", lines=True)
+    # if datasetname == 'pubhealth':
+    #     data_frame = pd.read_json("eval_data/health_claims_processed.jsonl", lines=True)
+    # if datasetname == 'triviaqa':
+    #     data_frame = pd.read_json("eval_data/triviaqa_test_w_gs.jsonl", lines=True)
+    # if datasetname == 'ASQA':
+    #     data_frame = pd.read_json("eval_data/asqa_eval_gtr_top100.jsonl", lines=True)
+    # if datasetname == 'FactScore':
+    #     data_frame = pd.read_json("eval_data/factscore_unlabeled_alpaca_13b_retrieval.jsonl", lines=True)
     
+    if datasetname == 'drop':
+        data_frame = pd.read_json("eval_data/drop_dataset_dev_passage_qa_with_ret.json")
+    if datasetname == 'gsm8k':
+        data_frame = pd.read_json("eval_data/gsm8k_test_with_ret.json")    
+    if datasetname == 'triviaqa':
+        data_frame = pd.read_json("eval_data/triviaqa_with_ret.json")
+    if datasetname == 'wq':
+        data_frame = pd.read_json("eval_data/wq_with_ret.json")
+    if datasetname == 'taqa':
+        data_frame = pd.read_json("eval_data/taqa_with_ret.jsonl", lines=True)
+    if datasetname == 'freshqa':
+        data_frame = pd.read_json("eval_data/freshqa_without_falsepremise_time_change_with_ret.jsonl", lines=True)
+
     if args.debug:
         data_frame = data_frame.sample(100)
     dataset = []
-    if datasetname == 'popqa' or datasetname == 'triviaqa':
+    
+    if datasetname == 'drop':
         for _,row in data_frame.iterrows():
-            question = "### Instruction:\n" + row['question']
-            # create a new example object for each row
+            question = TASK_INST_EVAL_UAR['drop'](row['passage'],row['question'])
             dataset.append(
-                Example(task_id=row['id'],              
-                        question=question,       
-                        answer=row['answers'][0],       
-                        crossfile_context=row['ctxs'])  
-            )
-    if datasetname == 'arc':
-        instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + '\n' + "## Input:\n\n"
-        for _,row in data_frame.iterrows():
-            choices = row["choices"]
-            result = '\n'.join(f" {label}:{text}" for label, text in zip(choices['label'], choices['text']))
-            # question = instruction + row['question'] + result + "\n\n### The answer is:\n" 
-            question = instruction + row['question'] + '\n' + result
-            # create a new example object for each row
-            dataset.append(
-                Example(task_id=row['id'],              
-                        question=question,              
-                        answer=row['answerKey'],        
-                        crossfile_context=row['ctxs'])  
-            )   
-
-    if datasetname == 'pubhealth':
-        instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + '\n' + "## Input:\n\n"
-        for index,row in data_frame.iterrows():
-            # question = instruction + row['question']  + "\n\n### The answer is:\n"
-            question = instruction + row['question'] 
-            # create a new example object for each row
-            dataset.append(
-                Example(task_id=f"pubhealth_{index}",              
-                        question=question,              
-                        answer=row['answers'][0],       
-                        crossfile_context=row['ctxs'])  
+                Example(task_id=row['query_id'],
+                        question=question,
+                        answer='',
+                        crossfile_context=row['cotriever_results']
+                )
             )
 
-    if datasetname == 'ASQA':
-        instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + '\n' + "## Input:\n\n"
+    if datasetname == 'gsm8k':
         for index,row in data_frame.iterrows():
-            # question = instruction + row['question'] + "\n\n### The answer is:\n"
-            question = instruction + row['question']
+            question = TASK_INST_EVAL_UAR['gsm8k'].format(row['question'])
             dataset.append(
-                Example(task_id=f"ASQA_{index}",              
-                        question=row['question'],              
-                        answer=row['answer'],       
-                        crossfile_context=row['docs'])  
+                Example(task_id=f"gsm8k_{index}",
+                        question=question,
+                        answer='',
+                        crossfile_context=row['cotriever_results']
+                )
             )
-        
-    # if datasetname == 'FactScore':
-    #     for index,row in data_frame.iterrows():
+    
+    if datasetname == 'triviaqa':
+        for _,row in data_frame.iterrows():
+            dataset.append(
+                Example(task_id=row['question_id'],
+                        question=row['question'],
+                        answer='',
+                        crossfile_context=row['cotriever_results']
+                )
+            )
+
+    if datasetname == 'wq':
+        for index,row in data_frame.iterrows():
+            dataset.append(
+                Example(task_id=f"wq_{index}",
+                        question=row['question'],
+                        answer='',
+                        crossfile_context=row['cotriever_results']
+                )
+            )
+
+    if datasetname == 'taqa':
+        for index,row in data_frame.iterrows():
+            dataset.append(
+                Example(task_id=row['question_id'],
+                        question=row['question'],
+                        answer='',
+                        crossfile_context=[{'text': row['refer_passage']}]
+                )
+            )
+
+    if datasetname == 'freshqa':
+        for index,row in data_frame.iterrows():
+            dataset.append(
+                Example(task_id=f"freshqa_{index}",
+                        question=row['question'],
+                        answer='',
+                        crossfile_context=[{'text': row['refer_passage']}]
+                )
+            )
+
+    # if datasetname == 'popqa' or datasetname == 'triviaqa':
+    #     for _,row in data_frame.iterrows():
+    #         question = "### Instruction:\n" + row['question']
+    #         # create a new example object for each row
     #         dataset.append(
-    #             Example(task_id=f"FactScore_{index}",             
-    #                     question=row['question'],              
-    #                     answer=row['answer'][0],       
+    #             Example(task_id=row['id'],              
+    #                     question=question,       
+    #                     answer=row['answers'][0],       
     #                     crossfile_context=row['ctxs'])  
-    #         )        
+    #         )
+    # if datasetname == 'arc':
+    #     instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + '\n' + "## Input:\n\n"
+    #     for _,row in data_frame.iterrows():
+    #         choices = row["choices"]
+    #         result = '\n'.join(f" {label}:{text}" for label, text in zip(choices['label'], choices['text']))
+    #         # question = instruction + row['question'] + result + "\n\n### The answer is:\n" 
+    #         question = instruction + row['question'] + '\n' + result
+    #         # create a new example object for each row
+    #         dataset.append(
+    #             Example(task_id=row['id'],              
+    #                     question=question,              
+    #                     answer=row['answerKey'],        
+    #                     crossfile_context=row['ctxs'])  
+    #         )   
+
+    # if datasetname == 'pubhealth':
+    #     instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + '\n' + "## Input:\n\n"
+    #     for index,row in data_frame.iterrows():
+    #         # question = instruction + row['question']  + "\n\n### The answer is:\n"
+    #         question = instruction + row['question'] 
+    #         # create a new example object for each row
+    #         dataset.append(
+    #             Example(task_id=f"pubhealth_{index}",              
+    #                     question=question,              
+    #                     answer=row['answers'][0],       
+    #                     crossfile_context=row['ctxs'])  
+    #         )
+
+    # if datasetname == 'ASQA':
+    #     instruction = "### Instruction:\n" + TASK_INST_EVAL[datasetname] + '\n' + "## Input:\n\n"
+    #     for index,row in data_frame.iterrows():
+    #         # question = instruction + row['question'] + "\n\n### The answer is:\n"
+    #         question = instruction + row['question']
+    #         dataset.append(
+    #             Example(task_id=f"ASQA_{index}",              
+    #                     question=row['question'],              
+    #                     answer=row['answer'],       
+    #                     crossfile_context=row['docs'])  
+    #         )
+              
     return dataset
 
 

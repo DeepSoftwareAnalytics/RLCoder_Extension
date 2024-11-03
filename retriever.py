@@ -4,7 +4,8 @@ from transformers import AutoTokenizer, AutoModel
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 from datasets import Blank
-
+import faiss
+import numpy as np
 def tokenize(text, tokenizer, max_length, is_query):
     """
     Converts text to a list of token ids.
@@ -109,18 +110,46 @@ class Retriever(nn.Module):
         query_embeddings = torch.cat(query_embeddings, dim=0)
         context_embeddings = torch.cat(context_embeddings, dim=0)
 
-        scores = torch.mm(query_embeddings, context_embeddings.t())
-        scores = scores.cpu().numpy()
+        # scores = torch.mm(query_embeddings, context_embeddings.t())
+        # scores = scores.cpu().numpy()
 
-        topk_codeblocks = []  # Stores top-k codeblocks for each query
+        # 将 CUDA 张量移动到 CPU 并转换为 NumPy 数组
+        query_embeddings = query_embeddings.cpu().numpy()
+        context_embeddings = context_embeddings.cpu().numpy()
+
+        query_embeddings = np.asarray(query_embeddings,dtype=np.float32)
+        context_embeddings = np.asarray(context_embeddings, dtype=np.float32)
+        # use faiss
+        d = query_embeddings.shape[1]
+        index = faiss.IndexFlatIP(d)
+        faiss.normalize_L2(context_embeddings)
+        index.add(context_embeddings)
+        faiss.normalize_L2(query_embeddings)
+        # retrieve
+        _, indices = index.search(query_embeddings, topk)
+
+        # topk_codeblocks = []  # Stores top-k codeblocks for each query
+        # start_idx = 0
+        # for i, num_candidates in enumerate(candidate_numbers):
+        #     if num_candidates == 0:
+        #         topk_codeblocks.append([])  # If there are no candidates for this query, add an empty list
+        #         continue
+        #     query_scores = scores[i][start_idx:start_idx+num_candidates]  # Get scores for the current query
+        #     topk_indices_query = query_scores.argsort()[-topk:][::-1]  # Get indices of top-k codeblocks
+        #     topk_candidates_query = [candidate_context[start_idx + idx] for idx in topk_indices_query]
+
+        #     if len(topk_candidates_query) < topk:
+        #         topk_candidates_query += [Blank("Don't need cross context to completion", "")] * (topk - len(topk_candidates_query))
+        #     topk_codeblocks.append(topk_candidates_query)
+        #     start_idx += num_candidates
+        topk_codeblocks = []  # 存储每个查询的 Top-K 候选文档
         start_idx = 0
         for i, num_candidates in enumerate(candidate_numbers):
             if num_candidates == 0:
-                topk_codeblocks.append([])  # If there are no candidates for this query, add an empty list
+                topk_codeblocks.append([])  # 如果没有候选文档，添加一个空列表
                 continue
-            query_scores = scores[i][start_idx:start_idx+num_candidates]  # Get scores for the current query
-            topk_indices_query = query_scores.argsort()[-topk:][::-1]  # Get indices of top-k codeblocks
-            topk_candidates_query = [candidate_context[start_idx + idx] for idx in topk_indices_query]
+            topk_indices_query = indices[i]  # 获取当前查询的 Top-K 候选文档的索引
+            topk_candidates_query = [candidate_context[idx] for idx in topk_indices_query]
 
             if len(topk_candidates_query) < topk:
                 topk_candidates_query += [Blank("Don't need cross context to completion", "")] * (topk - len(topk_candidates_query))

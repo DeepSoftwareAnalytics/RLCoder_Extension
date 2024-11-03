@@ -11,6 +11,10 @@ from bm25 import TaskSpecificBM25
 from retriever import Retriever, tokenize
 from datasets import load_test_dataset, load_train_and_valid_dataset, construct_dataset, Blank
 from utils.eval import compute_acc,compute_ASQA
+from utils.drop import compute_drop
+from utils.gsm8k import compute_gsm8k
+from utils.wq import compute_wq
+
 
 from transformers import get_linear_schedule_with_warmup
 from torch.optim import AdamW
@@ -69,8 +73,14 @@ def retrieve_context(args, examples, bm25, retriever, dataset_name, is_training=
             unixcoder_topk = args.sample_number 
 
         queries = [example.question for example in examples]
-        candidate_context = bm25[dataset_name].query([x.task_id for x in examples], queries, topk=bm25_topk)
-
+        if not args.eval:
+            candidate_context = bm25[dataset_name].query([x.task_id for x in examples], queries, topk=bm25_topk)
+        else:
+        # 直接构造检索文档的列表
+            candidate_context = []
+            for example in examples:
+                if example.crossfile_context:
+                    candidate_context.append([Blank("", doc['text']) for doc in example.crossfile_context])
         if args.enable_repocoder and inference_type == 'unixcoder_with_rl':
             _, retrieved_context = retrieve_context(args, examples, bm25, retriever_RLCoder, dataset_name, inference_type="unixcoder") 
             generations = generator.generate(examples, retrieved_context, args.generator_max_generation_length)
@@ -115,25 +125,35 @@ class CustomDataset(Dataset):
         return torch.tensor(query_tokens_id, dtype=torch.long), torch.tensor(candidate_tokens_id, dtype=torch.long), torch.tensor(self.labels[idx], dtype=torch.long)
 
 def run(args):
-    popqa_eval = load_test_dataset(args,"popqa")
+    # popqa_eval = load_test_dataset(args,"popqa")
+    # triviaqa_eval = load_test_dataset(args,"triviaqa")
+    # arc_eval = load_test_dataset(args,"arc")
+    # pubhealth_eval = load_test_dataset(args,"pubhealth")
+    # ASQA_eval = load_test_dataset(args,"ASQA")
+    drop_eval = load_test_dataset(args,"drop")
+    gsm8k_eval = load_test_dataset(args,"gsm8k")
     triviaqa_eval = load_test_dataset(args,"triviaqa")
-    arc_eval = load_test_dataset(args,"arc")
-    pubhealth_eval = load_test_dataset(args,"pubhealth")
-    ASQA_eval = load_test_dataset(args,"ASQA")
-    # FactScore_eval = load_test_dataset(args,"FactScore")
-    
+    wq_eval = load_test_dataset(args,"wq")
+    taqa_eval = load_test_dataset(args,"taqa")
+    freshqa_eval = load_test_dataset(args,"freshqa")
+
     # training_raw_data, eval_raw_data = load_train_and_valid_dataset()
     # args.data_per_epoch = len(training_raw_data)
     # eval_all_examples = construct_dataset(eval_raw_data, 100 if args.debug else 1000)
 
     all_eval_examples = {
         # "alpaca_eval": eval_all_examples,
-        "popqa_eval": popqa_eval,
-        "triviaqa_eval": triviaqa_eval,
-        "arc_eval": arc_eval,
-        "pubhealth_eval": pubhealth_eval,
-        "ASQA_eval": ASQA_eval,
-        # "FactScore_eval": FactScore_eval,
+        # "popqa_eval": popqa_eval,
+        # "triviaqa_eval": triviaqa_eval,
+        # "arc_eval": arc_eval,
+        # "pubhealth_eval": pubhealth_eval,
+        # "ASQA_eval": ASQA_eval,
+        "drop_eval" : drop_eval,
+        "gsm8k_eval" : gsm8k_eval,
+        "triviaqa_eval" : triviaqa_eval,
+        "wq_eval" : wq_eval,
+        # "taqa_eval" : taqa_eval,
+        # "freshqa_eval" : freshqa_eval,
     }
 
 
@@ -191,17 +211,24 @@ def run(args):
                 with open(f"{args.output_dir}/{name}/prediction.jsonl", "w", encoding="utf-8") as f_pred:
                     for example, temp_generation in zip(examples, temp_generations):
                         f_pred.write(json.dumps({"task_id": example.task_id, "pred": temp_generation}) + "\n")      
-                if name == "popqa_eval":
-                    results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/popqa_longtail_w_gs.jsonl")
-                if name == "arc_eval":
-                    results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/arc_challenge_processed.jsonl", True)
-                if name == "pubhealth_eval":
-                    results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/health_claims_processed.jsonl")
-                if name == "triviaqa_eval":    
-                    results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/triviaqa_test_w_gs.jsonl")
-                if name == "ASQA_eval":
-                    results['em'], results['rg'], results['mau'], results['pre'], results['rec'] = compute_ASQA(f"{args.output_dir}/{name}", "eval_data/asqa_eval_gtr_top100.jsonl")
-                # if neme == "FactScore_eval":
+                # if name == "popqa_eval":
+                #     results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/popqa_longtail_w_gs.jsonl")
+                # if name == "arc_eval":
+                #     results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/arc_challenge_processed.jsonl", True)
+                # if name == "pubhealth_eval":
+                #     results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/health_claims_processed.jsonl")
+                # if name == "triviaqa_eval":    
+                #     results['acc'] = compute_acc(f"{args.output_dir}/{name}", "eval_data/triviaqa_test_w_gs.jsonl")
+                # if name == "ASQA_eval":
+                #     results['em'], results['rg'], results['mau'], results['pre'], results['rec'] = compute_ASQA(f"{args.output_dir}/{name}", "eval_data/asqa_eval_gtr_top100.jsonl")
+                if name == "drop_eval":
+                    results['acc'] = compute_drop(f"{args.output_dir}/{name}","eval_data/drop_dataset_dev_passage_qa_with_ret.json")
+                if name == "gsm8k_eval":
+                    results['acc'] = compute_gsm8k(f"{args.output_dir}/{name}","eval_data/gsm8k_test_with_ret.json")
+                if name == "triviaqa_eval":
+                    results['acc'] = compute_wq(f"{args.output_dir}/{name}","eval_data/triviaqa_with_ret.json")
+                if name == "wq_eval":
+                    results['acc'] = compute_wq(f"{args.output_dir}/{name}","eval_data/wq_with_ret.json")                            
             table.add_row(['raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["acc"], results["fs"], results["rg"], results["mau"], results["pre"],results["rec"], round(time.time() - start_time, 1)])
 
             print(table)
@@ -261,7 +288,7 @@ def run(args):
                     results['acc'] = compute_acc(f"{args.output_dir}/result_init/{name}", "eval_data/triviaqa_test_w_gs.jsonl")
                 if name == "ASQA_eval":
                     results['em'], results['rg'], results['mau'], results['pre'], results['rec'] = compute_ASQA(f"{args.output_dir}/result_init/{name}", "eval_data/asqa_eval_gtr_top100.jsonl")
-                # if neme == "FactScore_eval":              
+                              
             
             evaluate_table[name].add_row(["init", 'raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["acc"], results["fs"], results["rg"], results["mau"], results["pre"],results["rec"], round(time.time() - start_time, 1)])
             print(evaluate_table[name])
@@ -346,7 +373,7 @@ def run(args):
                                 results['acc'] = compute_acc(f"{args.output_dir}/result_{inner_epoch}/{name}", "eval_data/triviaqa_test_w_gs.jsonl")
                             if name == "ASQA_eval":
                                 results['em'], results['rg'], results['mau'], results['pre'], results['rec'] = compute_ASQA(f"{args.output_dir}/result_{inner_epoch}/{name}", "eval_data/asqa_eval_gtr_top100.jsonl")
-                            # if neme == "FactScore_eval":              
+                                          
                         
                         evaluate_table[name].add_row([inner_epoch, 'raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["acc"], results["fs"], results["rg"], results["mau"], results["pre"],results["rec"], round(time.time() - start_time, 1)])                            
 
@@ -398,7 +425,7 @@ def run(args):
                         results['acc'] = compute_acc(f"{args.output_dir}/result_{epoch}/{name}", "eval_data/triviaqa_test_w_gs.jsonl")
                     if name == "ASQA_eval":
                         results['em'], results['rg'], results['mau'], results['pre'], results['rec'] = compute_ASQA(f"{args.output_dir}/result_{epoch}/{name}", "eval_data/asqa_eval_gtr_top100.jsonl")
-                    # if neme == "FactScore_eval":              
+                                  
                 
                 evaluate_table[name].add_row([epoch, 'raw', name, len(examples), f"{np.mean(losses):.4f}", f"{np.exp(np.mean(losses)):.4f}", results["em"], results["acc"], results["fs"], results["rg"], results["mau"], results["pre"],results["rec"], round(time.time() - start_time, 1)])     
 
