@@ -275,8 +275,8 @@ def evaluate_prediction_file(
     # predicted_answers = json.load(open(prediction_path, encoding="utf-8"))
     predicted_answers = {}
     with open(f"{prediction_path}/prediction.jsonl", encoding="utf-8") as pred_file:
-        predictions = json.load(pred_file)
-        for item in predictions:
+        for line in pred_file:
+            item = json.loads(line)
             predicted_answers[item['task_id']] = item['pred']
     annotations = json.load(open(gold_path, encoding="utf-8"))
     global_em, global_f1 = evaluate_json(annotations, predicted_answers)

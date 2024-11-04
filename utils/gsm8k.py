@@ -8,8 +8,8 @@ def evaluate_prediction_file(prediction_path: str, gold_path: str):
     # predicted_answers = json.load(open(prediction_path, encoding="utf-8"))
     predicted_answers = {}
     with open(f"{prediction_path}/prediction.jsonl", encoding="utf-8") as pred_file:
-        predictions = json.load(pred_file)
-        for item in predictions:
+        for line in pred_file:
+            item = json.loads(line)
             predicted_answers.append(item['pred'])
     groundtruth_answers = {}
     with open(gold_path, encoding="utf-8") as groundtruth_file:

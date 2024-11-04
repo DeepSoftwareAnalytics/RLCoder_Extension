@@ -88,7 +88,7 @@ def load_test_dataset(args, datasetname):
 
     if datasetname == 'gsm8k':
         for index,row in data_frame.iterrows():
-            question = TASK_INST_EVAL_UAR['gsm8k'].format(row['question'])
+            question = TASK_INST_EVAL_UAR['gsm8k'](row['question'])
             dataset.append(
                 Example(task_id=f"gsm8k_{index}",
                         question=question,
