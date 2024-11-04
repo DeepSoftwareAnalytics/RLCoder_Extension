@@ -222,7 +222,7 @@ def run(args):
                 # if name == "ASQA_eval":
                 #     results['em'], results['rg'], results['mau'], results['pre'], results['rec'] = compute_ASQA(f"{args.output_dir}/{name}", "eval_data/asqa_eval_gtr_top100.jsonl")
                 if name == "drop_eval":
-                    results['acc'] = compute_drop(f"{args.output_dir}/{name}","eval_data/drop_dataset_dev_passage_qa_with_ret.json")
+                    results['acc'] = compute_drop(f"{args.output_dir}/{name}","eval_data/drop_dataset_dev.json")
                 if name == "gsm8k_eval":
                     results['acc'] = compute_gsm8k(f"{args.output_dir}/{name}","eval_data/gsm8k_test_with_ret.json")
                 if name == "triviaqa_eval":
